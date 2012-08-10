@@ -1,3 +1,8 @@
+# $Rev:  $
+# $LastChangedDate:  $
+# $URL:  $
+__version__ = '$Id:  $'.replace('$','')
+
 import sys
 import os
 from PyQt4 import QtCore, QtGui, uic
@@ -59,24 +64,32 @@ class mileageGui(base, form):
         
         #Connect the close button
         self.actionClose.triggered.connect(self.close)
-        
-        
+        self.actionAbout.triggered.connect(self.About)
+
+    def About(self):
+        msg_box = QtGui.QMessageBox()
+        msg_box.setIcon(QtGui.QMessageBox.Information)
+        msg_box.setWindowTitle('About')
+        msg_box.setText(__version__)
+        msg_box.exec_()
+    
+    
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     myapp = mileageGui()
     myapp.show()
     
-    with open('FuelRecord.csv','rb') as f:
-        reader = csv.reader(f)
-        header = reader.next()
-        #pdb.set_trace()
-        data = [row for row in reader]
+    # with open('FuelRecord.csv','rb') as f:
+        # reader = csv.reader(f)
+        # header = reader.next()
+        # #pdb.set_trace()
+        # data = [row for row in reader]
 
-    model = TableModel(data, header)
-    myapp.tableView.setModel(model)
-    myapp.tableView.resizeRowsToContents()
-    myapp.tableView.resizeColumnsToContents()
+    # model = TableModel(data, header)
+    # myapp.tableView.setModel(model)
+    # myapp.tableView.resizeRowsToContents()
+    # myapp.tableView.resizeColumnsToContents()
     
     #odometer = list(zip(*data)[2])
     # pdb.set_trace()

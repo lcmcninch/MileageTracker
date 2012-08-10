@@ -1,7 +1,7 @@
-# $Rev:  $
-# $LastChangedDate:  $
-# $URL:  $
-__version__ = '$Id:  $'.replace('$','')
+# $Rev$
+# $LastChangedDate$
+# $URL$
+__version__ = '$Id$'.replace('$','')
 
 import sys
 import os

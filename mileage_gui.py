@@ -13,8 +13,10 @@ form_path = os.path.join(os.getcwd(),'UIFiles\\ui1.ui')
 form, base = uic.loadUiType(form_path)
 
 class TableModel(QtCore.QAbstractTableModel):
-    def __init__(self, table = [], headers = [], parent = None):
+    def __init__(self, table = None, headers = None, parent = None):
         QtCore.QAbstractListModel.__init__(self, parent)
+        if table is None: table = []
+        if headers is None: headers = []
         self._table = table
         self._headers = headers
     
@@ -22,7 +24,10 @@ class TableModel(QtCore.QAbstractTableModel):
         return len(self._table)
     
     def columnCount(self, parent):
-        return len(self._table[0])
+        if self._table:
+            return len(self._table[0])
+        else:
+            return 0
     
     def data(self, index, role):
 
@@ -53,18 +58,24 @@ class TableModel(QtCore.QAbstractTableModel):
                             QtCore.QAbstractTableModel.flags(self, index) |
                             QtCore.Qt.ItemIsEditable)
 
+
 class mileageGui(base, form):
     def __init__(self, parent=None):
-        #super ensures __init__'s of the parents are run
         super(mileageGui,self).__init__(parent)
         
         self.setupUi(self)
         #self.button_open.clicked.connect(self.file_dialog)
-        # QtCore.QObject.connect(self.ui.button_open,QtCore.SIGNAL("clicked()"), self.file_dialog)
         
-        #Connect the close button
+        #Set up application data
+        self._metapath = QtCore.QDir.homePath()
+        
+        #Signal/slot connections
         self.actionClose.triggered.connect(self.close)
         self.actionAbout.triggered.connect(self.About)
+        self.actionImport.triggered.connect(self.Import)
+        
+        self.tableModel = TableModel([],[])
+        self.viewTable.setModel(self.tableModel)
 
     def About(self):
         msg_box = QtGui.QMessageBox()
@@ -73,24 +84,33 @@ class mileageGui(base, form):
         msg_box.setText(__version__)
         msg_box.exec_()
     
-    
+    def Import(self, filename=None):
+        if filename:
+            fname = filename 
+        else:
+            fname = str(QtGui.QFileDialog.getOpenFileName(self,
+                          'Open file', directory = self._metapath,
+                          filter = 'CSV Files (*.csv)'))
+        
+        if fname:
+            with open(fname,'rb') as f:
+                reader = csv.reader(f)
+                header = reader.next()
+                data = [row for row in reader]
+            self.tableModel.layoutAboutToBeChanged.emit()
+            self.tableModel._table = data
+            self.tableModel._headers = header
+            self.tableModel.layoutChanged.emit()
+            self.viewTable.resizeColumnsToContents()
+            
 
+    
+    
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     myapp = mileageGui()
     myapp.show()
-    
-    # with open('FuelRecord.csv','rb') as f:
-        # reader = csv.reader(f)
-        # header = reader.next()
-        # #pdb.set_trace()
-        # data = [row for row in reader]
 
-    # model = TableModel(data, header)
-    # myapp.tableView.setModel(model)
-    # myapp.tableView.resizeRowsToContents()
-    # myapp.tableView.resizeColumnsToContents()
-    
     #odometer = list(zip(*data)[2])
     # pdb.set_trace()
     # odometer = [float(k) for k in list(zip(*data)[2])]

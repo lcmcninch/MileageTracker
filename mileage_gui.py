@@ -3,10 +3,10 @@
 # $URL$
 __version__ = '$Id$'.replace('$','')
 
-import sys
-import os
+import os.path
 from PyQt4 import QtCore, QtGui, uic
 import csv
+from datetime import datetime
 import pdb
 
 form_path = os.path.join(os.getcwd(),'UIFiles\\ui1.ui')
@@ -67,12 +67,16 @@ class mileageGui(base, form):
         #self.button_open.clicked.connect(self.file_dialog)
         
         #Set up application data
-        self._metapath = QtCore.QDir.homePath()
+        # self._metapath = QtCore.QDir.homePath()
+        self._metapath = os.getcwd()
+        self.editDate.setDate(datetime.now())
+        self.editDate.setCurrentSection(QtGui.QDateTimeEdit.DaySection)
         
         #Signal/slot connections
         self.actionClose.triggered.connect(self.close)
         self.actionAbout.triggered.connect(self.About)
         self.actionImport.triggered.connect(self.Import)
+        self.buttonInsert.clicked.connect(self.Insert)
         
         self.tableModel = TableModel([],[])
         self.viewTable.setModel(self.tableModel)
@@ -102,11 +106,20 @@ class mileageGui(base, form):
             self.tableModel._headers = header
             self.tableModel.layoutChanged.emit()
             self.viewTable.resizeColumnsToContents()
-            
+        
+        #Populate the combobox
+        dex = self.tableModel._headers.index('Town')
+        town_list = list(set([e[dex] for e in self.tableModel._table]))
+        town_list.remove('')
+        self.editLocation.addItems(sorted(town_list))
+    
+    def Insert(self):
+        print 'Insert'
 
     
     
 if __name__ == "__main__":
+    import sys
     app = QtGui.QApplication(sys.argv)
     myapp = mileageGui()
     myapp.show()

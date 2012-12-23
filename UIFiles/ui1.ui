@@ -132,6 +132,16 @@
         </layout>
        </item>
        <item>
+        <widget class="QCheckBox" name="checkFillup">
+         <property name="text">
+          <string>Fillup</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="buttonInsert">
          <property name="text">
           <string>Insert</string>
@@ -149,7 +159,7 @@
      <x>0</x>
      <y>0</y>
      <width>596</width>
-     <height>21</height>
+     <height>18</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

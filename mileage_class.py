@@ -1,4 +1,7 @@
-#import QtCore, QtGui
+# $Rev$
+# $LastChangedDate$
+# $URL$
+__version__ = '$Id$'.replace('$', '')
 
 class mileageList(list):
     pass
@@ -52,10 +55,18 @@ class mileageEntry(object):
         If this entry cannot be linked to a previous entry that was a fillup,
         it returns None, meaning there is no basis for mpg calculations.
         """
-        if not self.previous:
+        if not self.odometer:
             return None
-        m = self.odometer - self.previous.odometer
-        return addPrevious(self, m, 'miles')
+        prev_obj = self.previous
+        while True:
+            if not prev_obj:
+                return None
+            p = prev_obj.odometer
+            if prev_obj.fillup and p:
+                break
+            prev_obj = prev_obj.previous
+        m = self.odometer - p
+        return m
     
     @property
     def mpg(self):
@@ -79,12 +90,12 @@ def addPrevious(obj, value, field):
     return value
 
 if __name__ == "__main__":
-    m = mileageEntry((2011, 12, 21), 'Stevensville', 19321, 13.4, 3.23, True)
+    m = mileageEntry((2011, 12, 21), 'Stevensville', 19321, 13.4, 3.23, False)
     m1 = mileageEntry((2011, 12, 22), 'Stevensville', 19621, 12.1, 3.43, False,
                       m)
     m2 = mileageEntry((2011, 12, 23), 'Stevensville', 19921, 11.4, 3.13, True,
                       m1)
-    print m2.gallons
+#    print m2.gallons
     print m2.miles
-    print m1.mpg, m2.mpg
-    print m2['mpg']
+#    print m1.mpg, m2.mpg
+#    print m2['mpg']

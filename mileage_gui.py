@@ -8,42 +8,36 @@ from PyQt4 import QtCore, QtGui, uic
 import csv
 from datetime import datetime
 import pdb
+from mileage_class import mileageEntry, mileageList
 
 form_path = os.path.join(os.getcwd(),'UIFiles\\ui1.ui')
 form, base = uic.loadUiType(form_path)
 
 class TableModel(QtCore.QAbstractTableModel):
-    def __init__(self, table = None, headers = None, parent = None):
+    def __init__(self, data, parent = None):
         QtCore.QAbstractListModel.__init__(self, parent)
-        if table is None: table = []
-        if headers is None: headers = []
-        self._table = table
-        self._headers = headers
+        
+        self.dataset = data
+        self._headers = ['Date', 'Town', 'Odometer', 'Miles', 'Gallons',
+                         'MPG' , 'Price']
     
     def rowCount(self, parent):
-        return len(self._table)
+        return len(self.dataset)
     
     def columnCount(self, parent):
-        if self._table:
-            return len(self._table[0])
-        else:
-            return 0
+        return len(self._headers)
     
     def data(self, index, role):
-
         if role == QtCore.Qt.DisplayRole:
             row = index.row()
-            col = index.column()
-            value = self._table[row][col]
+            field = self._headers[index.column()]
+            value = self.dataset[row][field]
             
             return value
 
-    def headerData(self, section, orientation, role):
-        
-        if role == QtCore.Qt.DisplayRole:
-            
-            if orientation == QtCore.Qt.Horizontal:
-                
+    def headerData(self, section, orientation, role):        
+        if role == QtCore.Qt.DisplayRole:            
+            if orientation == QtCore.Qt.Horizontal:                
                 if section < len(self._headers):
                     return self._headers[section]
                 else:
@@ -57,6 +51,18 @@ class TableModel(QtCore.QAbstractTableModel):
         return QtCore.Qt.ItemFlags(
                             QtCore.QAbstractTableModel.flags(self, index) |
                             QtCore.Qt.ItemIsEditable)
+
+    def changeDataset(self, dataset):
+        """ Function that changes models underlying dataset
+
+        This function is to facilitate changing the dataset for the model
+        to be used in cases such as loading a file.
+
+        """
+        self.beginResetModel()
+        self.dataset = dataset
+        self.endResetModel()
+        #self.dirty.emit()
 
 
 class mileageGui(base, form):
@@ -78,8 +84,9 @@ class mileageGui(base, form):
         self.actionImport.triggered.connect(self.Import)
         self.buttonInsert.clicked.connect(self.Insert)
         
-        self.tableModel = TableModel([],[])
+        self.tableModel = TableModel([])
         self.viewTable.setModel(self.tableModel)
+        self.viewTable.setAlternatingRowColors(True)
 
     def About(self):
         msg_box = QtGui.QMessageBox()
@@ -97,20 +104,48 @@ class mileageGui(base, form):
                           filter = 'CSV Files (*.csv)'))
         
         if fname:
-            with open(fname,'rb') as f:
+#            with open(fname,'rb') as f:
+#                reader = csv.reader(f)
+#                header = reader.next()
+#                data = [row for row in reader]
+#            self.tableModel.layoutAboutToBeChanged.emit()
+#            self.tableModel._table = data
+#            self.tableModel._headers = header
+#            self.tableModel.layoutChanged.emit()
+#            self.viewTable.resizeColumnsToContents()
+            with open(fname, 'rb') as f:
                 reader = csv.reader(f)
                 header = reader.next()
                 data = [row for row in reader]
-            self.tableModel.layoutAboutToBeChanged.emit()
-            self.tableModel._table = data
-            self.tableModel._headers = header
-            self.tableModel.layoutChanged.emit()
-            self.viewTable.resizeColumnsToContents()
-        
+            lhead = [x.lower() for x in header]
+            m = mileageList()
+            for d in data:
+                previous = None
+                gallons = d[lhead.index('gallons')]
+                if len(m) and gallons:
+                    gallons = float(gallons)
+                    previous = m[-1]
+                odometer = d[lhead.index('odometer')]
+                if odometer:
+                    odometer = float(odometer)
+                ppg = d[lhead.index('ppg')]
+                if ppg:
+                    ppg = float(ppg)
+                fillup = d[lhead.index('fillup')]
+                e = mileageEntry(d[lhead.index('date')],
+                                 d[lhead.index('town')],
+                                 odometer, gallons, ppg,
+                                 fillup, previous)
+                m.append(e)
+            self.viewTable.model().changeDataset(m)
+            self.viewTable.resizeRowsToContents()
+            
+
         #Populate the combobox
         dex = self.tableModel._headers.index('Town')
-        town_list = list(set([e[dex] for e in self.tableModel._table]))
-        town_list.remove('')
+        town_list = list(set([e['town'] for e in self.tableModel.dataset]))
+        if "" in town_list:
+            town_list.remove('')
         self.editLocation.addItems(sorted(town_list))
     
     def Insert(self):
@@ -122,6 +157,37 @@ if __name__ == "__main__":
     import sys
     app = QtGui.QApplication(sys.argv)
     myapp = mileageGui()
+#    with open('..\FuelRecord.csv','rb') as f:
+#        reader = csv.reader(f)
+#        header = reader.next()
+#        lhead = [x.lower() for x in header]
+#        #pdb.set_trace()
+#        data = [row for row in reader]
+#    m = mileageList()
+#    for d in data:
+#        previous = None
+#        gallons = d[lhead.index('gallons')]
+#        if len(m) and gallons:
+#            gallons = float(gallons)
+#            previous = m[-1]
+#        odometer = d[lhead.index('odometer')]
+#        if odometer:
+#            odometer = float(odometer)
+#        ppg = d[lhead.index('ppg')]
+#        if ppg:
+#            ppg = float(ppg)
+#        # fillup = True if d[lhead.index('mpg')] else False
+#        fillup = d[lhead.index('fillup')]
+#        e = mileageEntry(d[lhead.index('date')],
+#                         d[lhead.index('town')],
+#                         odometer, gallons, ppg,
+#                         fillup, previous)
+#        m.append(e)    
+#
+#    myapp.viewTable.model().changeDataset(m)
+##    myapp.viewTable.resizeRowsToContents()
+##    myapp.viewTable.resizeColumnsToContents()
+    
     myapp.show()
 
     #odometer = list(zip(*data)[2])

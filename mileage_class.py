@@ -12,10 +12,10 @@ class mileageEntry(object):
                  previous=None):
         self._date = date
         self._location = location
-        self._odometer = odometer
-        self._gallons = gallons
-        self._price = price
-        self.fillup = fillup
+        self._odometer = float(odometer) if odometer else None
+        self._gallons = float(gallons) if gallons else None
+        self._price = float(price) if price else None
+        self.fillup = bool(fillup)
         self.previous = previous
     
     def __getitem__(self, key):
@@ -73,6 +73,11 @@ class mileageEntry(object):
         if not self.fillup or self.miles is None or self.gallons is None:
             return None
         return self.miles/float(self.gallons)
+    
+    @property
+    def cost(self):
+        if self._price and self._gallons:
+            return self._price * self._gallons
 
 
 def addPrevious(obj, value, field):

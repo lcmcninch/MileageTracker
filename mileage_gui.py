@@ -19,12 +19,12 @@ class TableModel(QtCore.QAbstractTableModel):
         
         self.dataset = data
         self._headers = ['Date', 'Town', 'Odometer', 'Miles', 'Gallons',
-                         'MPG' , 'Price']
+                         'MPG' , 'Price', 'Cost']
     
-    def rowCount(self, parent):
+    def rowCount(self, index=QtCore.QModelIndex()):
         return len(self.dataset)
     
-    def columnCount(self, parent):
+    def columnCount(self, index=QtCore.QModelIndex()):
         return len(self._headers)
     
     def data(self, index, role):
@@ -32,6 +32,8 @@ class TableModel(QtCore.QAbstractTableModel):
             row = index.row()
             field = self._headers[index.column()]
             value = self.dataset[row][field]
+            if field.lower() == 'cost' and value:
+                value = '${:.2f}'.format(value)
             
             return value
 
@@ -52,6 +54,16 @@ class TableModel(QtCore.QAbstractTableModel):
                             QtCore.QAbstractTableModel.flags(self, index) |
                             QtCore.Qt.ItemIsEditable)
 
+    def insertRow(self, entry, position=None, index=QtCore.QModelIndex()):
+        """ Model required method for inserting rows """
+        if position is None:
+            position = self.rowCount()
+        self.beginInsertRows(QtCore.QModelIndex(), position, position)
+        self.dataset.append(entry)
+        self.endInsertRows()
+        self.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+        return True
+
     def changeDataset(self, dataset):
         """ Function that changes models underlying dataset
 
@@ -68,6 +80,7 @@ class TableModel(QtCore.QAbstractTableModel):
 class mileageGui(base, form):
     def __init__(self, parent=None):
         super(mileageGui,self).__init__(parent)
+        self.setWindowIcon(QtGui.QIcon('icons\gas-pump-icon.png'))
         
         self.setupUi(self)
         #self.button_open.clicked.connect(self.file_dialog)
@@ -94,6 +107,7 @@ class mileageGui(base, form):
         msg_box.setWindowTitle('About')
         msg_box.setText(__version__)
         msg_box.exec_()
+        print self.viewTable.verticalScrollBar().maximum()
     
     def Import(self, filename=None):
         if filename:
@@ -104,15 +118,6 @@ class mileageGui(base, form):
                           filter = 'CSV Files (*.csv)'))
         
         if fname:
-#            with open(fname,'rb') as f:
-#                reader = csv.reader(f)
-#                header = reader.next()
-#                data = [row for row in reader]
-#            self.tableModel.layoutAboutToBeChanged.emit()
-#            self.tableModel._table = data
-#            self.tableModel._headers = header
-#            self.tableModel.layoutChanged.emit()
-#            self.viewTable.resizeColumnsToContents()
             with open(fname, 'rb') as f:
                 reader = csv.reader(f)
                 header = reader.next()
@@ -137,19 +142,36 @@ class mileageGui(base, form):
                                  odometer, gallons, ppg,
                                  fillup, previous)
                 m.append(e)
-            self.viewTable.model().changeDataset(m)
-            self.viewTable.resizeRowsToContents()
+            self.tableModel.changeDataset(m)
+            h = self.viewTable.verticalHeader().sectionSizeFromContents(0)
+            self.viewTable.resizeColumnsToContents()
+            self.viewTable.verticalHeader().setDefaultSectionSize(h.height())
             
 
         #Populate the combobox
-        dex = self.tableModel._headers.index('Town')
         town_list = list(set([e['town'] for e in self.tableModel.dataset]))
-        if "" in town_list:
+        if '' in town_list:
             town_list.remove('')
         self.editLocation.addItems(sorted(town_list))
     
     def Insert(self):
-        print 'Insert'
+        date = str(self.editDate.date().toString('MM/dd/yy'))
+        loc = str(self.editLocation.currentText())
+        odo = float(self.editOdometer.text())
+        gal = float(self.editGallons.text())
+        ppg = float(self.editPrice.text())
+        fil = self.checkFillup.isChecked()
+        entry = mileageEntry(date, loc, odo, gal, ppg, fil,
+                             self.tableModel.dataset[-1])
+        self.tableModel.insertRow(entry)
+        self.viewTable.scrollToBottom()
+
+#    def scrollToBottom(self):
+#        sb = self.viewTable.verticalScrollBar()
+#        max = sb.maximum()
+#        print max
+#        sb.setValue(max)
+#        print sb.value()
 
     
     
@@ -157,6 +179,9 @@ if __name__ == "__main__":
     import sys
     app = QtGui.QApplication(sys.argv)
     myapp = mileageGui()
+    
+    myapp.Import('..\FuelRecord.csv')
+    
 #    with open('..\FuelRecord.csv','rb') as f:
 #        reader = csv.reader(f)
 #        header = reader.next()

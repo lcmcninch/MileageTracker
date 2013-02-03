@@ -16,6 +16,8 @@ class TableModel(QtCore.QAbstractTableModel):
         QtCore.QAbstractListModel.__init__(self, parent)
 
         self.dataset = mileageList() if data is None else data
+        self._special = ['cost', 'price', 'mpg']
+        self._formats = ['${:.2f}', '${:.3f}', '{:.2f}']
 
     def rowCount(self, index=QtCore.QModelIndex()):
         return len(self.dataset)
@@ -24,14 +26,23 @@ class TableModel(QtCore.QAbstractTableModel):
         return len(self.dataset.displayFields)
 
     def data(self, index, role):
+        field = self.dataset.displayFields[index.column()]
         if role == QtCore.Qt.DisplayRole:
             row = index.row()
-            field = self.dataset.displayFields[index.column()]
             value = self.dataset[row][field]
-            if field.lower() == 'cost' and value:
-                value = '${:.2f}'.format(value)
-
+            #Format special fields
+            if value:
+                try:
+                    dex = self._special.index(field.lower())
+                except:
+                    pass
+                else:
+                    value = self._formats[dex].format(value)
             return value
+        elif role == QtCore.Qt.FontRole and field.lower() == 'mpg':
+            font = QtGui.QFont()
+            font.setBold(True)
+            return font
 
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole:
@@ -42,6 +53,12 @@ class TableModel(QtCore.QAbstractTableModel):
                     return "not implemented"
             else:
                 return section + 1
+        elif (role == QtCore.Qt.FontRole and
+                section < len(self.dataset.displayFields) and
+                self.dataset.displayFields[section].lower() == 'mpg'):
+            font = QtGui.QFont()
+            font.setBold(True)
+            return font
 
     def flags(self, index):
         if not index.isValid():
@@ -84,6 +101,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         #Set up application data
         # self._metapath = QtCore.QDir.homePath()
         self._metapath = os.getcwd()
+        self._edits = [self.editOdometer, self.editGallons, self.editPrice]
         self.editDate.setDate(datetime.now())
         self.editDate.setCurrentSection(QtGui.QDateTimeEdit.DaySection)
 
@@ -130,14 +148,13 @@ class mileageGui(uiform, QtGui.QMainWindow):
                 odometer = d[lhead.index('odometer')]
                 if odometer:
                     odometer = float(odometer)
-                ppg = d[lhead.index('ppg')]
-                if ppg:
-                    ppg = float(ppg)
+                price = d[lhead.index('price')]
+                if price:
+                    price = float(price)
                 fillup = d[lhead.index('fillup')]
                 e = mileageEntry(d[lhead.index('date')],
                                  d[lhead.index('town')],
-                                 odometer, gallons, ppg,
-                                 fillup, previous)
+                                 odometer, gallons, price, fillup, previous)
                 m.append(e)
             self.tableModel.changeDataset(m)
             h = self.viewTable.verticalHeader().sectionSizeFromContents(0)
@@ -149,6 +166,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         if '' in town_list:
             town_list.remove('')
         self.editLocation.addItems(sorted(town_list))
+        self.viewTable.scrollToBottom()
 
     def Export(self, filename=None):
         if filename:
@@ -178,6 +196,8 @@ class mileageGui(uiform, QtGui.QMainWindow):
                              self.tableModel.dataset[-1])
         self.tableModel.insertRow(entry)
         self.viewTable.scrollToBottom()
+        for e in self._edits:
+            e.clear()
 
 
 def warningBox(message):

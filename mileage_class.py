@@ -28,8 +28,8 @@ class mileageList(list):
 
 class mileageEntry(object):
 
-    displayFields = ['Date', 'Town', 'Odometer', 'Miles', 'Gallons', 'MPG',
-                     'Price', 'Cost']
+    displayFields = ['Date', 'Town', 'Odometer', 'Miles', 'Gallons', 'Price',
+                     'Cost', 'MPG']
     saveFields = displayFields + ['fillup']
 
     def __init__(self, date, location, odometer, gallons, price, fillup,

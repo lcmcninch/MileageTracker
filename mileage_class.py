@@ -39,7 +39,7 @@ class mileageEntry(object):
         self._odometer = float(odometer) if odometer else None
         self._gallons = float(gallons) if gallons else None
         self._price = float(price) if price else None
-        self.fillup = False if fillup in ['false', 'f'] else bool(fillup)
+        self.fillup = False if fillup.lower() in ['false', 'f', '0'] else bool(fillup)
         self.previous = previous
 
     def __getitem__(self, key):
@@ -63,14 +63,19 @@ class mileageEntry(object):
 
     @property
     def gallons(self):
-        """Returns the gallons of fuel from this entry and all previous
+        """Returns the gallons of fuel from this entry only. """
+        return self._gallons
+
+    @property
+    def sum_gallons(self):
+        """Returns the total gallons of fuel from this entry and all previous
         non-fillup entries.
 
         If this entry cannot be linked to a previous entry that was a fillup,
         it returns None, meaning that it can't be determined how many gallons
         were used.
         """
-        return addPrevious(self, self._gallons, 'gallons')
+        return addPrevious(self, self.gallons, 'gallons')
 
     @property
     def miles(self):
@@ -89,14 +94,13 @@ class mileageEntry(object):
             if prev_obj.fillup and p:
                 break
             prev_obj = prev_obj.previous
-        m = self.odometer - p
-        return m
+        return self.odometer - p
 
     @property
     def mpg(self):
         if not self.fillup or self.miles is None or self.gallons is None:
             return None
-        return self.miles/float(self.gallons)
+        return self.miles/float(self.sum_gallons)
 
     @property
     def cost(self):
@@ -124,7 +128,7 @@ if __name__ == "__main__":
                       m)
     m2 = mileageEntry('2011/12/23', 'Stevensville', 19921, 11.4, 3.13, True,
                       m1)
-#    print m2.gallons
+#    print m2.sum_gallons
     print m2.miles
 #    print m1.mpg, m2.mpg
 #    print m2['mpg']

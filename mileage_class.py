@@ -39,7 +39,9 @@ class mileageEntry(object):
         self._odometer = float(odometer) if odometer else None
         self._gallons = float(gallons) if gallons else None
         self._price = float(price) if price else None
-        self.fillup = False if fillup.lower() in ['false', 'f', '0'] else bool(fillup)
+        self.fillup = (False if (isinstance(fillup, str) and
+                                fillup.lower() in ['false', 'f', '0']) else
+                                bool(fillup))
         self.previous = previous
 
     def __getitem__(self, key):
@@ -105,7 +107,7 @@ class mileageEntry(object):
     @property
     def cost(self):
         if self._price and self._gallons:
-            return self._price * self._gallons
+            return round(self._price * self._gallons, 2)
 
 
 def addPrevious(obj, value, field):

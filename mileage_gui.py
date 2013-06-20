@@ -27,7 +27,7 @@ class TableModel(QtCore.QAbstractTableModel):
 
     def data(self, index, role):
         field = self.dataset.displayFields[index.column()]
-        if role == QtCore.Qt.DisplayRole:
+        if role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
             row = index.row()
             value = self.dataset[row][field]
             #Format special fields
@@ -38,11 +38,23 @@ class TableModel(QtCore.QAbstractTableModel):
                     pass
                 else:
                     value = self._formats[dex].format(value)
-            return value
+            return QtCore.QVariant(value)
         elif role == QtCore.Qt.FontRole and field.lower() == 'mpg':
             font = QtGui.QFont()
             font.setBold(True)
             return font
+
+    def setData(self, index, value, role):
+        row = index.row()
+        field = self.dataset.displayFields[index.column()]
+        if field and index.isValid():
+            try:
+                self.dataset[row][field] = value.toPyObject()
+            except AttributeError:
+                return False
+            else:
+                self.dataChanged.emit(index, index)
+        return True
 
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole:
@@ -61,11 +73,15 @@ class TableModel(QtCore.QAbstractTableModel):
             return font
 
     def flags(self, index):
+        field = self.dataset.displayFields[index.column()]
         if not index.isValid():
             return QtCore.Qt.ItemEnabled
-        return QtCore.Qt.ItemFlags(
+        elif field in self.dataset.editableFields:
+            return QtCore.Qt.ItemFlags(
                             QtCore.QAbstractTableModel.flags(self, index) |
                             QtCore.Qt.ItemIsEditable)
+        return QtCore.Qt.ItemFlags(
+                            QtCore.QAbstractTableModel.flags(self, index))
 
     def insertRow(self, entry, position=None, index=QtCore.QModelIndex()):
         """ Model required method for inserting rows """

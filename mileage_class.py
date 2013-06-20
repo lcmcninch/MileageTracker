@@ -13,6 +13,7 @@ class mileageList(list):
         self.extend(entries)
         self.displayFields = mileageEntry.displayFields
         self.saveFields = mileageEntry.saveFields
+        self.editableFields = mileageEntry.editableFields
 
     def write(self, fid, ftype='csv', delimiter=','):
         itemString = lambda x: '' if x is None else str(x)
@@ -31,6 +32,7 @@ class mileageEntry(object):
     displayFields = ['Date', 'Town', 'Odometer', 'Miles', 'Gallons', 'Price',
                      'Cost', 'MPG']
     saveFields = displayFields + ['fillup']
+    editableFields = ['Date', 'Town', 'Odometer', 'Gallons', 'Price']
 
     def __init__(self, date, location, odometer, gallons, price, fillup,
                  previous=None):
@@ -47,26 +49,49 @@ class mileageEntry(object):
     def __getitem__(self, key):
         return self.__getattribute__(key.lower())
 
+    def __setitem__(self, key, value):
+        self.__setattr__(key.lower(), value)
+
     @property
     def date(self):
         return self._date
+
+    @date.setter
+    def date(self, value):
+        self._date = str(value)
 
     @property
     def town(self):
         return self._location
 
+    @town.setter
+    def town(self, value):
+        self._location = str(value)
+
     @property
     def odometer(self):
         return self._odometer
+
+    @odometer.setter
+    def odometer(self, value):
+        self._odometer = float(value)
 
     @property
     def price(self):
         return self._price
 
+    @price.setter
+    def price(self, value):
+        self._price = float(value.replace('$', ''))
+
     @property
     def gallons(self):
         """Returns the gallons of fuel from this entry only. """
         return self._gallons
+
+    @gallons.setter
+    def gallons(self, value):
+        self._gallons = float(value)
 
     @property
     def sum_gallons(self):

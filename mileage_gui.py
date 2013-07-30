@@ -32,9 +32,10 @@ class mileageGui(uiform, QtGui.QMainWindow):
 
         # Get settings object
         settings = QtCore.QSettings()
-        #Restore windoow geometry
+        #Restore window geometry
         self.restoreGeometry(
                 settings.value("MainWindow/Geometry").toByteArray())
+        self._initHeaderState = settings.value('TableView/HeaderState')
 
         #Set up application data
         # self._metapath = QtCore.QDir.homePath()
@@ -64,6 +65,10 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.dirty.connect(self.setDirty)
 
     def closeEvent(self, event):
+        """
+        Implemented to prompt to save if file is changed and save settings
+        before closing
+        """
         if self._dirty:
             message_box = self.createSaveChangesToCurrent()
             value = message_box.exec_()
@@ -77,6 +82,13 @@ class mileageGui(uiform, QtGui.QMainWindow):
             settings = QtCore.QSettings()
             settings.setValue("MainWindow/Geometry", QtCore.QVariant(
                           self.saveGeometry()))
+            settings.setValue('TableView/HeaderState',
+                          self.viewTable.horizontalHeader().saveState())
+
+    def showEvent(self, event):
+        """ Implemented to setup table view geometry """
+        self.viewTable.horizontalHeader().restoreState(
+                self._initHeaderState.toByteArray())
 
     def About(self):
         msg_box = QtGui.QMessageBox()
@@ -122,7 +134,6 @@ class mileageGui(uiform, QtGui.QMainWindow):
                 m.append(e)
             self.tableModel.changeDataset(m)
             h = self.viewTable.verticalHeader().sectionSizeFromContents(0)
-            self.viewTable.resizeColumnsToContents()
             self.viewTable.verticalHeader().setDefaultSectionSize(h.height())
 
             #Populate the combobox

@@ -201,6 +201,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.viewTable.scrollToBottom()
         for e in self._edits:
             e.clear()
+        self.editDate.setFocus(QtCore.Qt.TabFocusReason)
 
     def setDirty(self):
         """ Slot to set the dirty flag when changes have been made """

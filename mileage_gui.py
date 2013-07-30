@@ -145,6 +145,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
 
             self._dirty = False
             self.changeWindowTitle()
+            self.editDate.setFocus(QtCore.Qt.TabFocusReason)
 
     def Save(self):
         self.SaveFile(False)

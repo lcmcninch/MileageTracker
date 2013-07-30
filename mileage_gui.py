@@ -3,7 +3,7 @@
 # $URL$
 __version__ = '$Id$'.replace('$', '')
 
-import os.path
+import os
 from PyQt4 import QtCore, QtGui
 import csv
 from datetime import datetime
@@ -106,6 +106,24 @@ class TableModel(QtCore.QAbstractTableModel):
         #self.dirty.emit()
 
 
+class mileageDelegate(QtGui.QStyledItemDelegate):
+
+    def __init__(self, parent=None):
+        super(mileageDelegate, self).__init__(parent)
+
+    def createEditor(self, parent, option, index):
+        field = index.model().dataset.fieldobjs[index.column()]
+        if field.editor == field.DateEditor:
+            de = QtGui.QDateEdit(parent)
+            return de
+        elif field.editor == field.DoubleSpinBoxEditor:
+            spinbox = QtGui.QDoubleSpinBox(parent)
+            spinbox.setDecimals(3)
+            return spinbox
+        else:
+            return QtGui.QStyledItemDelegate.createEditor(self, parent, option, index)
+
+
 class mileageGui(uiform, QtGui.QMainWindow):
     def __init__(self, parent=None):
         super(mileageGui, self).__init__(parent)
@@ -131,6 +149,8 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.tableModel = TableModel()
         self.viewTable.setModel(self.tableModel)
         self.viewTable.setAlternatingRowColors(True)
+        dg = mileageDelegate(self)
+        self.viewTable.setItemDelegate(dg)
 
     def About(self):
         msg_box = QtGui.QMessageBox()

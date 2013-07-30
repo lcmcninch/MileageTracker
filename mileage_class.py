@@ -4,6 +4,7 @@
 __version__ = '$Id$'.replace('$', '')
 
 from os import linesep
+from fieldobjects import FieldObject, FieldObjectContainer
 
 
 class mileageList(list):
@@ -13,7 +14,17 @@ class mileageList(list):
         self.extend(entries)
         self.displayFields = mileageEntry.displayFields
         self.saveFields = mileageEntry.saveFields
-        self.editableFields = mileageEntry.editableFields
+
+        # Set up the field object container
+        self._fieldobjs = FieldObjectContainer()
+        for field in self.displayFields:
+            displayed = field in self.displayFields
+            editable = field in self.editableFields
+            self.fieldobjs.append(FieldObject(field, displayed, editable))
+
+        # Field settings
+        self.fieldobjs['Gallons'].editor = FieldObject.DoubleSpinBoxEditor
+#         self.fieldobjs['Date'].editor = FieldObject.DateEditor
 
     def write(self, fid, ftype='csv', delimiter=','):
         itemString = lambda x: '' if x is None else str(x)
@@ -25,6 +36,18 @@ class mileageList(list):
                 out = [itemString(x[k]) for k in header]
                 fid.write(delimiter.join(out))
                 fid.write(linesep)
+
+    @property
+    def fields(self):
+        return [k.name for k in self._fieldobjs]
+
+    @property
+    def fieldobjs(self):
+        return self._fieldobjs
+
+    @property
+    def editableFields(self):
+        return mileageEntry.editableFields
 
 
 class mileageEntry(object):
@@ -47,7 +70,7 @@ class mileageEntry(object):
         self.previous = previous
 
     def __getitem__(self, key):
-        return self.__getattribute__(key.lower())
+        return self.__getattribute__(str(key).lower())
 
     def __setitem__(self, key, value):
         self.__setattr__(key.lower(), value)

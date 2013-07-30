@@ -12,6 +12,9 @@ from UIFiles.mileage_Ui import Ui_MainWindow as uiform
 
 
 class TableModel(QtCore.QAbstractTableModel):
+
+    dirty = QtCore.pyqtSignal()
+
     def __init__(self, data=None, parent=None):
         QtCore.QAbstractListModel.__init__(self, parent)
 
@@ -54,6 +57,7 @@ class TableModel(QtCore.QAbstractTableModel):
                 return False
             else:
                 self.dataChanged.emit(index, index)
+                self.dirty.emit()
         return True
 
     def headerData(self, section, orientation, role):
@@ -91,6 +95,7 @@ class TableModel(QtCore.QAbstractTableModel):
         self.dataset.append(entry)
         self.endInsertRows()
         self.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+        self.dirty.emit()
         return True
 
     def changeDataset(self, dataset):
@@ -103,6 +108,7 @@ class TableModel(QtCore.QAbstractTableModel):
         self.beginResetModel()
         self.dataset = dataset
         self.endResetModel()
+        self.dirty.emit()
         #self.dirty.emit()
 
 
@@ -125,32 +131,53 @@ class mileageDelegate(QtGui.QStyledItemDelegate):
 
 
 class mileageGui(uiform, QtGui.QMainWindow):
+
+    dirty = QtCore.pyqtSignal()
+
     def __init__(self, parent=None):
         super(mileageGui, self).__init__(parent)
         self.setWindowIcon(QtGui.QIcon('icons\gas-pump-icon.png'))
 
         self.setupUi(self)
+        self._dirty = False
+        self._checkSave = True
         #self.button_open.clicked.connect(self.file_dialog)
 
         #Set up application data
         # self._metapath = QtCore.QDir.homePath()
         self._metapath = os.getcwd()
         self._edits = [self.editOdometer, self.editGallons, self.editPrice]
+        self._currentFile = None
         self.editDate.setDate(datetime.now())
         self.editDate.setCurrentSection(QtGui.QDateTimeEdit.DaySection)
 
-        #Signal/slot connections
-        self.actionClose.triggered.connect(self.close)
-        self.actionAbout.triggered.connect(self.About)
-        self.actionImport.triggered.connect(self.Import)
-        self.actionExport.triggered.connect(self.Export)
-        self.buttonInsert.clicked.connect(self.Insert)
-
+        #Set up the table model
         self.tableModel = TableModel()
         self.viewTable.setModel(self.tableModel)
         self.viewTable.setAlternatingRowColors(True)
         dg = mileageDelegate(self)
         self.viewTable.setItemDelegate(dg)
+
+        #Signal/slot connections
+        self.actionExit.triggered.connect(self.close)
+        self.actionAbout.triggered.connect(self.About)
+        self.actionOpen.triggered.connect(self.Open)
+        self.actionSave.triggered.connect(self.Save)
+        self.actionSave_As.triggered.connect(self.Save_As)
+        self.buttonInsert.clicked.connect(self.Insert)
+        self.tableModel.dirty.connect(self.setDirty)
+        self.dirty.connect(self.setDirty)
+
+    def closeEvent(self, event):
+        if self._dirty:
+            message_box = self.createSaveChangesToCurrent()
+            value = message_box.exec_()
+            # This is a value of cancel
+            if value == message_box.Cancel:
+                event.setAccepted(False)
+            # This is a yes value
+            elif value == message_box.Yes:
+                event.setAccepted(self.SaveFile(False))
 
     def About(self):
         msg_box = QtGui.QMessageBox()
@@ -160,15 +187,17 @@ class mileageGui(uiform, QtGui.QMainWindow):
         msg_box.exec_()
         print self.viewTable.verticalScrollBar().maximum()
 
-    def Import(self, filename=None):
+    def Open(self, filename=None):
         if filename:
-            fname = filename
+            fname = os.path.abspath(filename)
         else:
             fname = str(QtGui.QFileDialog.getOpenFileName(self,
                           'Open file', directory=self._metapath,
                           filter='CSV Files (*.csv)'))
 
         if fname:
+            self._metapath = os.path.dirname(fname)
+            self._currentFile = fname
             with open(fname, 'rb') as f:
                 reader = csv.reader(f)
                 header = reader.next()
@@ -197,22 +226,33 @@ class mileageGui(uiform, QtGui.QMainWindow):
             self.viewTable.resizeColumnsToContents()
             self.viewTable.verticalHeader().setDefaultSectionSize(h.height())
 
-        #Populate the combobox
-        town_list = list(set([e['town'] for e in self.tableModel.dataset]))
-        if '' in town_list:
-            town_list.remove('')
-        self.editLocation.addItems(sorted(town_list))
-        self.viewTable.scrollToBottom()
+            #Populate the combobox
+            town_list = list(set([e['town'] for e in self.tableModel.dataset]))
+            if '' in town_list:
+                town_list.remove('')
+            self.editLocation.addItems(sorted(town_list))
+            self.viewTable.scrollToBottom()
 
-    def Export(self, filename=None):
-        if filename:
-            fname = filename
-        else:
+            self._dirty = False
+            self.changeWindowTitle()
+
+    def Save(self):
+        self.SaveFile(False)
+
+    def Save_As(self):
+        self.SaveFile(True)
+
+    def SaveFile(self, checksave=True):
+        fname = self._currentFile
+        if checksave or not self._currentFile:
+            pth = self._currentFile if self._currentFile else self._metapath
             fname = str(QtGui.QFileDialog.getSaveFileName(self,
-                          'Export file', directory=self._metapath,
+                          'Save file', directory=pth,
                           filter='CSV Files (*.csv)'))
 
         if fname:
+            self._metapath = os.path.dirname(fname)
+            self._currentFile = fname
             try:
                 fid = open(fname, 'wb')
             except IOError:
@@ -220,6 +260,23 @@ class mileageGui(uiform, QtGui.QMainWindow):
             else:
                 with fid:
                     self.tableModel.dataset.write(fid, ftype='csv')
+            self._dirty = False
+            self.changeWindowTitle()
+            return True
+
+        return False
+
+    def createSaveChangesToCurrent(self):
+        message = ("Do you want to save the changes to the current"
+                   " file?")
+        message_box = QtGui.QMessageBox()
+        message_box.setText(message)
+        message_box.setWindowTitle('Save Changes?')
+        message_box.setIcon(QtGui.QMessageBox.Question)
+        message_box.addButton(QtGui.QMessageBox.Yes)
+        message_box.addButton(QtGui.QMessageBox.No)
+        message_box.addButton(QtGui.QMessageBox.Cancel)
+        return message_box
 
     def Insert(self):
         date = str(self.editDate.date().toString('MM/dd/yy'))
@@ -235,6 +292,19 @@ class mileageGui(uiform, QtGui.QMainWindow):
         for e in self._edits:
             e.clear()
 
+    def setDirty(self):
+        """ Slot to set the dirty flag when changes have been made """
+        self._dirty = True
+        self.changeWindowTitle()
+
+    def changeWindowTitle(self, filename=None):
+        """ Simple helper function to change the window title """
+        file_path = filename if filename else self._currentFile
+        if self._dirty:
+            file_path = ''.join(['*', file_path])
+        win_title = 'Fuel Mileage - ' + file_path
+        self.setWindowTitle(win_title)
+
 
 def warningBox(message):
     message_box = QtGui.QMessageBox()
@@ -247,7 +317,7 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     myapp = mileageGui()
 
-    myapp.Import('..\FuelRecord.csv')
+    myapp.Open('..\FuelRecord.csv')
 
 #    with open('..\FuelRecord.csv','rb') as f:
 #        reader = csv.reader(f)

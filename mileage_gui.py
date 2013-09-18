@@ -9,7 +9,7 @@ import csv
 from datetime import datetime
 from mileage_class import mileageEntry, mileageList
 from mileage_model import TableModel, mileageDelegate
-from UIFiles.mileage_Ui import Ui_MainWindow as uiform
+from UIFiles import Ui_MainWindow as uiform
 
 # These are used in the settings
 organization = "McNinch Custom"
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     myapp = mileageGui()
 
-    myapp.Open('..\FuelRecord.csv')
+    myapp.Open('../FuelRecord.csv')
 
 #    with open('..\FuelRecord.csv','rb') as f:
 #        reader = csv.reader(f)

@@ -80,11 +80,8 @@ for File in file_names:
 # AST parse above. Make the import into the local variable "_". Then move the
 # classes we want into the local name space with getattr.
 for File, k_list in file_classes.items():
-    print File, k_list
     mod = os.path.splitext(os.path.split(File)[1])[0]
     import_stmt = "{}.{}".format(__package__, mod)
-    print mod
-    print import_stmt
     _ = __import__(import_stmt, fromlist=k_list)
     for klass in k_list:
         locals()[klass] = getattr(_, klass)

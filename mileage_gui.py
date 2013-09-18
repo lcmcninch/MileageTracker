@@ -9,7 +9,7 @@ import csv
 from datetime import datetime
 from mileage_class import mileageEntry, mileageList
 from mileage_model import TableModel, mileageDelegate
-from UIFiles import Ui_MainWindow as uiform
+from UIFiles.mileage_Ui import Ui_MainWindow as uiform
 
 # These are used in the settings
 organization = "McNinch Custom"

@@ -137,6 +137,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
             self.viewTable.verticalHeader().setDefaultSectionSize(h.height())
 
             #Populate the combobox
+            self.editLocation.setInsertPolicy(QtGui.QComboBox.InsertAlphabetically)
             town_list = list(set([e['town'] for e in self.tableModel.dataset]))
             if '' in town_list:
                 town_list.remove('')
@@ -192,7 +193,8 @@ class mileageGui(uiform, QtGui.QMainWindow):
     def Insert(self):
         date = str(self.editDate.date().toString('MM/dd/yy'))
         loc = str(self.editLocation.currentText())
-        odo = float(self.editOdometer.text())
+        odo = self.editOdometer.text()
+        odo = float(odo) if not odo.isEmpty() else None
         gal = float(self.editGallons.text())
         ppg = float(self.editPrice.text())
         fil = self.checkFillup.isChecked()

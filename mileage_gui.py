@@ -30,6 +30,9 @@ class mileageGui(uiform, QtGui.QMainWindow):
         app.setOrganizationName(organization)
         app.setApplicationName(application)
 
+        # Setup the undo stack
+        self.undoStack = QtGui.QUndoStack(self)
+
         # Get settings object
         settings = QtCore.QSettings()
         #Restore window geometry
@@ -48,7 +51,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.editDate.setCurrentSection(QtGui.QDateTimeEdit.DaySection)
 
         #Set up the table model
-        self.tableModel = TableModel()
+        self.tableModel = TableModel(self.undoStack)
         self.viewTable.setModel(self.tableModel)
         self.viewTable.setAlternatingRowColors(True)
         dg = mileageDelegate(self)
@@ -60,6 +63,8 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.actionOpen.triggered.connect(self.Open)
         self.actionSave.triggered.connect(self.Save)
         self.actionSave_As.triggered.connect(self.Save_As)
+        self.actionUndo.triggered.connect(self.undoStack.undo)
+        self.actionRedo.triggered.connect(self.undoStack.redo)
         self.buttonInsert.clicked.connect(self.Insert)
         self.tableModel.dirty.connect(self.setDirty)
         self.dirty.connect(self.setDirty)

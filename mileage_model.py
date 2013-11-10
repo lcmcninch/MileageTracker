@@ -11,12 +11,13 @@ class TableModel(QtCore.QAbstractTableModel):
 
     dirty = QtCore.pyqtSignal()
 
-    def __init__(self, data=None, parent=None):
+    def __init__(self, undoStack, data=None, parent=None):
         QtCore.QAbstractListModel.__init__(self, parent)
 
         self.dataset = mileageList() if data is None else data
         self._special = ['cost', 'price', 'mpg']
         self._formats = ['${:.2f}', '${:.3f}', '{:.2f}']
+        self.undoStack = undoStack
 
     def rowCount(self, index=QtCore.QModelIndex()):
         return len(self.dataset)
@@ -51,13 +52,8 @@ class TableModel(QtCore.QAbstractTableModel):
         if not newvalue:
             newvalue = None
         if field and index.isValid() and oldvalue != newvalue:
-            try:
-                self.dataset[row][field] = newvalue
-            except AttributeError:
-                return False
-            else:
-                self.dataChanged.emit(index, index)
-                self.dirty.emit()
+            command = self.setDataCmd(index, newvalue, oldvalue, self)
+            self.undoStack.push(command)
         return True
 
     def headerData(self, section, orientation, role):
@@ -109,6 +105,45 @@ class TableModel(QtCore.QAbstractTableModel):
         self.dataset = dataset
         self.endResetModel()
         self.dirty.emit()
+
+    class setDataCmd(QtGui.QUndoCommand):
+        def __init__(self, index, newvalue, oldvalue, model):
+            QtGui.QUndoCommand.__init__(self)
+            self.index = index
+            self.row = index.row()
+            self.field = model.dataset.displayFields[index.column()]
+            self.newvalue = newvalue
+            self.oldvalue = oldvalue
+            self.model = model
+            self.success = False
+
+        def redo(self):
+            model = self.model
+            row = self.row
+            field = self.field
+            try:
+                model.dataset[row][field] = self.newvalue
+            except AttributeError:
+                #This is meant to handle the case when an invalid field is changed
+                #The Attribute Error would be raised by the mileageEntry class
+                #May not be necessary because those fields shouldn't be editable anyway
+                self.success = False
+            else:
+                model.dataChanged.emit(self.index, self.index)
+                model.dirty.emit()
+                self.success = True
+
+        def undo(self):
+            print 'Undoing'
+            if self.success:
+                print 'now really'
+                model = self.model
+                row = self.row
+                field = self.field
+                model.dataset[row][field] = self.oldvalue
+                self.success = False
+                model.dataChanged.emit(self.index, self.index)
+                model.dirty.emit()
 
 
 class mileageDelegate(QtGui.QStyledItemDelegate):

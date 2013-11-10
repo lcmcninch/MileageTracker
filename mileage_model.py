@@ -46,9 +46,13 @@ class TableModel(QtCore.QAbstractTableModel):
     def setData(self, index, value, role):
         row = index.row()
         field = self.dataset.displayFields[index.column()]
-        if field and index.isValid():
+        oldvalue = self.dataset[row][field]
+        newvalue = value.toPyObject()
+        if not newvalue:
+            newvalue = None
+        if field and index.isValid() and oldvalue != newvalue:
             try:
-                self.dataset[row][field] = value.toPyObject()
+                self.dataset[row][field] = newvalue
             except AttributeError:
                 return False
             else:

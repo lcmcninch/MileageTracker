@@ -99,6 +99,15 @@ class mileageGui(uiform, QtGui.QMainWindow):
         print self.viewTable.verticalScrollBar().maximum()
 
     def Open(self, filename=None):
+        """ Opens a new csv file """
+        if self._dirty:
+            message_box = self.createSaveChangesToCurrent()
+            value = message_box.exec_()
+            if value == message_box.Yes:
+                value = self.SaveFile(False)
+            if value == message_box.Cancel:
+                return
+        #Get the new filename
         if filename:
             fname = os.path.abspath(filename)
         else:
@@ -126,7 +135,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
                     odometer = float(odometer)
                 price = d[lhead.index('price')]
                 if price:
-                    price = float(price)
+                    price = float(price.replace('$',''))
                 fillup = d[lhead.index('fillup')]
                 e = mileageEntry(d[lhead.index('date')],
                                  d[lhead.index('town')],
@@ -172,8 +181,8 @@ class mileageGui(uiform, QtGui.QMainWindow):
             else:
                 with fid:
                     self.tableModel.dataset.write(fid, ftype='csv')
-            self._dirty = False
-            self.changeWindowTitle()
+                self._dirty = False
+                self.changeWindowTitle()
             return True
 
         return False

@@ -97,7 +97,10 @@ class mileageEntry(object):
 
     @odometer.setter
     def odometer(self, value):
-        self._odometer = float(value)
+        try:
+            self._odometer = float(value)
+        except ValueError:
+            self._odometer = None
 
     @property
     def price(self):

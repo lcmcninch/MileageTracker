@@ -205,20 +205,8 @@ class mileageGui(uiform, QtGui.QMainWindow):
         return message_box
 
     def Insert(self):
-        date = str(self.editDate.date().toString('MM/dd/yy'))
-        loc = str(self.editLocation.currentText())
-        odo = self.editOdometer.text()
-        odo = float(odo) if not odo.isEmpty() else None
-        gal = float(self.editGallons.text())
-        ppg = float(self.editPrice.text())
-        fil = self.checkFillup.isChecked()
-        entry = mileageEntry(date, loc, odo, gal, ppg, fil,
-                             self.tableModel.dataset[-1])
-        self.tableModel.insertRow(entry)
-        self.viewTable.scrollToBottom()
-        for e in self._edits:
-            e.clear()
-        self.editDate.setFocus(QtCore.Qt.TabFocusReason)
+        command = self.insertCmd(self)
+        self.undoStack.push(command)
 
     def setDirty(self):
         """ Slot to set the dirty flag when changes have been made """
@@ -232,6 +220,36 @@ class mileageGui(uiform, QtGui.QMainWindow):
             file_path = ''.join(['*', file_path])
         win_title = 'Fuel Mileage - ' + file_path
         self.setWindowTitle(win_title)
+
+    #               #
+    # Undo Commands #
+    #               #
+
+    class insertCmd(QtGui.QUndoCommand):
+        def __init__(self, parent):
+            QtGui.QUndoCommand.__init__(self)
+            self.parent = parent
+            odo = parent.editOdometer.text()
+            kwargs = {'date': str(parent.editDate.date().toString('MM/dd/yy')),
+                      'location': str(parent.editLocation.currentText()),
+                      'odometer': (float(odo) if not odo.isEmpty() else None),
+                      'gallons': float(parent.editGallons.text()),
+                      'price': float(parent.editPrice.text()),
+                      'fillup': parent.checkFillup.isChecked()}
+            self.kwargs = kwargs
+
+        def redo(self):
+            previous = self.parent.tableModel.dataset[-1]
+            self.entry = mileageEntry(previous=previous, **self.kwargs)
+            self.parent.tableModel.insertRow(self.entry)
+            self.parent.viewTable.scrollToBottom()
+            for e in self.parent._edits:
+                e.clear()
+            self.parent.editDate.setFocus(QtCore.Qt.TabFocusReason)
+
+        def undo(self):
+            index = self.parent.tableModel.dataset.index(self.entry)
+            self.parent.tableModel.removeRows(index)
 
 
 def warningBox(message):

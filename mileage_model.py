@@ -6,6 +6,8 @@ __version__ = '$Id$'.replace('$', '')
 from PyQt4 import QtCore, QtGui
 from mileage_class import mileageList
 
+model_idx = QtCore.QModelIndex
+
 
 class TableModel(QtCore.QAbstractTableModel):
 
@@ -19,10 +21,10 @@ class TableModel(QtCore.QAbstractTableModel):
         self._formats = ['${:.2f}', '${:.3f}', '{:.2f}']
         self.undoStack = undoStack
 
-    def rowCount(self, index=QtCore.QModelIndex()):
+    def rowCount(self, index=model_idx()):
         return len(self.dataset)
 
-    def columnCount(self, index=QtCore.QModelIndex()):
+    def columnCount(self, index=model_idx()):
         return len(self.dataset.displayFields)
 
     def data(self, index, role):
@@ -83,14 +85,22 @@ class TableModel(QtCore.QAbstractTableModel):
         return QtCore.Qt.ItemFlags(
                             QtCore.QAbstractTableModel.flags(self, index))
 
-    def insertRow(self, entry, position=None, index=QtCore.QModelIndex()):
+    def insertRow(self, entry, position=None, index=model_idx()):
         """ Model required method for inserting rows """
         if position is None:
             position = self.rowCount()
         self.beginInsertRows(QtCore.QModelIndex(), position, position)
         self.dataset.append(entry)
         self.endInsertRows()
-        self.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+        self.dataChanged.emit(model_idx(), model_idx())
+        self.dirty.emit()
+        return True
+
+    def removeRows(self, position, rows=0, index=model_idx()):
+        """ Model required function for removing rows """
+        self.beginRemoveRows(model_idx(), position, position + rows)
+        self.dataset.removeEntry(position)
+        self.endRemoveRows()
         self.dirty.emit()
         return True
 
@@ -105,6 +115,10 @@ class TableModel(QtCore.QAbstractTableModel):
         self.dataset = dataset
         self.endResetModel()
         self.dirty.emit()
+
+    #               #
+    # Undo Commands #
+    #               #
 
     class setDataCmd(QtGui.QUndoCommand):
         def __init__(self, index, newvalue, oldvalue, model):
@@ -134,9 +148,7 @@ class TableModel(QtCore.QAbstractTableModel):
                 self.success = True
 
         def undo(self):
-            print 'Undoing'
             if self.success:
-                print 'now really'
                 model = self.model
                 row = self.row
                 field = self.field

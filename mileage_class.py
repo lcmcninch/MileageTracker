@@ -26,6 +26,10 @@ class mileageList(list):
         self.fieldobjs['Gallons'].editor = FieldObject.DoubleSpinBoxEditor
 #         self.fieldobjs['Date'].editor = FieldObject.DateEditor
 
+    def removeEntry(self, index):
+        """ Removes and returns the given index """
+        return self.pop(index)
+
     def write(self, fid, ftype='csv', delimiter=','):
         itemString = lambda x: '' if x is None else str(x)
         if ftype == 'csv':
@@ -108,7 +112,12 @@ class mileageEntry(object):
 
     @price.setter
     def price(self, value):
-        self._price = float(value.replace('$', ''))
+        try:
+            value = value.replace('$', '')
+        except:
+            pass
+        finally:
+            self._price = float(value)
 
     @property
     def gallons(self):

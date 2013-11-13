@@ -53,6 +53,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         #Set up the table model
         self.tableModel = TableModel(self.undoStack)
         self.viewTable.setModel(self.tableModel)
+        self.tableModel.newActiveCell.connect(self.viewTable.selectCell)
         self.viewTable.setAlternatingRowColors(True)
         dg = mileageDelegate(self)
         self.viewTable.setItemDelegate(dg)

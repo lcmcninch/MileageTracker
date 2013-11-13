@@ -12,6 +12,7 @@ model_idx = QtCore.QModelIndex
 class TableModel(QtCore.QAbstractTableModel):
 
     dirty = QtCore.pyqtSignal()
+    newActiveCell = QtCore.pyqtSignal(QtCore.QModelIndex)
 
     def __init__(self, undoStack, data=None, parent=None):
         QtCore.QAbstractListModel.__init__(self, parent)
@@ -146,6 +147,7 @@ class TableModel(QtCore.QAbstractTableModel):
                 model.dataChanged.emit(self.index, self.index)
                 model.dirty.emit()
                 self.success = True
+                model.newActiveCell.emit(self.index)
 
         def undo(self):
             if self.success:
@@ -156,6 +158,7 @@ class TableModel(QtCore.QAbstractTableModel):
                 self.success = False
                 model.dataChanged.emit(self.index, self.index)
                 model.dirty.emit()
+                model.newActiveCell.emit(self.index)
 
 
 class mileageDelegate(QtGui.QStyledItemDelegate):
@@ -174,3 +177,12 @@ class mileageDelegate(QtGui.QStyledItemDelegate):
             return spinbox
         else:
             return QtGui.QStyledItemDelegate.createEditor(self, parent, option, index)
+
+
+class mileageTable(QtGui.QTableView):
+    """ Subclass to provide minimal custom functionality """
+
+    def selectCell(self, index):
+        """ Select the cel at the given index """
+        smodel = self.selectionModel()
+        smodel.select(index, smodel.ClearAndSelect)

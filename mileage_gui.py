@@ -67,12 +67,13 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.actionSave_As.triggered.connect(self.Save_As)
         self.actionUndo.triggered.connect(self.undoStack.undo)
         self.actionRedo.triggered.connect(self.undoStack.redo)
+        self.checkFresh.toggled.connect(self.freshChecked)
         self.buttonInsert.clicked.connect(self.Insert)
         self.tableModel.dirty.connect(self.setDirty)
         self.dirty.connect(self.setDirty)
 
         #Set the window title
-        self.changeWindowTitle()
+        self.New()
 
     def closeEvent(self, event):
         """
@@ -124,6 +125,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.tableModel.changeDataset(mileageList())
         self._dirty = False
         self.changeWindowTitle()
+        self.checkFresh.setChecked(True)
         self.editDate.setFocus(QtCore.Qt.TabFocusReason)
 
     def Open(self, filename=None):
@@ -184,6 +186,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
             self._dirty = False
             self.changeWindowTitle()
             self.editDate.setFocus(QtCore.Qt.TabFocusReason)
+            self.checkFresh.setChecked(False)
 
     def Save(self):
         self.SaveFile(False)
@@ -231,6 +234,16 @@ class mileageGui(uiform, QtGui.QMainWindow):
         command = self.insertCmd(self)
         self.undoStack.push(command)
 
+    def freshChecked(self, state):
+        """ Make sure Start Fresh can be checked """
+        if not state and not len(self.tableModel.dataset):
+            self.checkFresh.setChecked(True)
+        if self.checkFresh.isChecked():
+            self.checkFillup.setChecked(True)
+            self.checkFillup.setEnabled(False)
+        else:
+            self.checkFillup.setEnabled(True)
+
     def setDirty(self):
         """ Slot to set the dirty flag when changes have been made """
         self._dirty = True
@@ -255,19 +268,22 @@ class mileageGui(uiform, QtGui.QMainWindow):
             QtGui.QUndoCommand.__init__(self)
             self.parent = parent
             odo = parent.editOdometer.text()
+            gal = parent.editGallons.text()
+            pri = parent.editPrice.text()
             kwargs = {'date': str(parent.editDate.date().toString('MM/dd/yy')),
                       'location': str(parent.editLocation.currentText()),
                       'odometer': (float(odo) if not odo.isEmpty() else None),
-                      'gallons': float(parent.editGallons.text()),
-                      'price': float(parent.editPrice.text()),
+                      'gallons': float(gal) if not gal.isEmpty() else None,
+                      'price': float(pri) if not pri.isEmpty() else None,
                       'fillup': parent.checkFillup.isChecked()}
             self.kwargs = kwargs
 
         def redo(self):
-            try:
-                previous = self.parent.tableModel.dataset[-1]
-            except IndexError:
+            if (self.parent.checkFresh.isChecked() or
+                len(self.parent.tableModel.dataset) == 0):
                 previous = None
+            else:
+                previous = self.parent.tableModel.dataset[-1]
             self.entry = mileageEntry(previous=previous, **self.kwargs)
             self.parent.tableModel.insertRow(self.entry)
             self.parent.viewTable.scrollToBottom()
@@ -291,7 +307,7 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     myapp = mileageGui()
 
-#     myapp.Open('../FuelRecord.csv')
+    myapp.Open('../GolfFuelRecord.csv')
 
 #    with open('..\FuelRecord.csv','rb') as f:
 #        reader = csv.reader(f)

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>580</width>
-    <height>585</height>
+    <width>606</width>
+    <height>601</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -33,129 +33,163 @@
       <property name="frameShadow">
        <enum>QFrame::Raised</enum>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QVBoxLayout" name="verticalLayout_4">
        <property name="margin">
         <number>5</number>
        </property>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <property name="spacing">
-          <number>0</number>
-         </property>
+        <layout class="QHBoxLayout" name="layoutEdits" stretch="0,2,1,1,1">
          <item>
-          <widget class="QLabel" name="labelDate">
-           <property name="text">
-            <string>Date</string>
+          <layout class="QVBoxLayout" name="layoutDate">
+           <property name="spacing">
+            <number>0</number>
            </property>
-          </widget>
+           <item>
+            <widget class="QLabel" name="labelDate">
+             <property name="text">
+              <string>Date</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDateEdit" name="editDate"/>
+           </item>
+          </layout>
          </item>
          <item>
-          <widget class="QDateEdit" name="editDate"/>
+          <layout class="QVBoxLayout" name="layoutLocation">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="labelLocation">
+             <property name="text">
+              <string>Location</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="editLocation">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+             <property name="insertPolicy">
+              <enum>QComboBox::InsertAlphabetically</enum>
+             </property>
+             <property name="frame">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="layoutOdometer">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="labelOdometer">
+             <property name="text">
+              <string>Odometer</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="editOdometer"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="layoutGallons">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="labelGallons">
+             <property name="text">
+              <string>Gallons</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="editGallons"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="layoutPrice">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="labelPrice">
+             <property name="text">
+              <string>Price</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="editPrice"/>
+           </item>
+          </layout>
          </item>
         </layout>
        </item>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
-         <property name="spacing">
-          <number>0</number>
-         </property>
+        <layout class="QHBoxLayout" name="layoutButtons">
          <item>
-          <widget class="QLabel" name="labelLocation">
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkFresh">
+           <property name="toolTip">
+            <string>Check if the previous fillup wasn't recorded</string>
+           </property>
            <property name="text">
-            <string>Location</string>
+            <string>Start Fresh</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="editLocation">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+          <widget class="QCheckBox" name="checkFillup">
+           <property name="text">
+            <string>Fillup</string>
            </property>
-           <property name="editable">
+           <property name="checked">
             <bool>true</bool>
            </property>
-           <property name="insertPolicy">
-            <enum>QComboBox::InsertAlphabetically</enum>
-           </property>
-           <property name="frame">
-            <bool>true</bool>
-           </property>
           </widget>
          </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <property name="spacing">
-          <number>0</number>
-         </property>
          <item>
-          <widget class="QLabel" name="labelOdometer">
+          <widget class="QPushButton" name="buttonInsert">
            <property name="text">
-            <string>Odometer</string>
+            <string>Insert</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLineEdit" name="editOdometer"/>
-         </item>
         </layout>
-       </item>
-       <item>
-        <layout class="QVBoxLayout" name="verticalLayout_7">
-         <property name="spacing">
-          <number>0</number>
-         </property>
-         <item>
-          <widget class="QLabel" name="labelGallons">
-           <property name="text">
-            <string>Gallons</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="editGallons"/>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QVBoxLayout" name="verticalLayout_8">
-         <property name="spacing">
-          <number>0</number>
-         </property>
-         <item>
-          <widget class="QLabel" name="labelPrice">
-           <property name="text">
-            <string>Price</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="editPrice"/>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="checkFillup">
-         <property name="text">
-          <string>Fillup</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="buttonInsert">
-         <property name="text">
-          <string>Insert</string>
-         </property>
-        </widget>
        </item>
       </layout>
+      <zorder>horizontalLayoutWidget</zorder>
+      <zorder></zorder>
+      <zorder>horizontalLayoutWidget_2</zorder>
      </widget>
     </item>
    </layout>
@@ -165,7 +199,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>580</width>
+     <width>606</width>
      <height>21</height>
     </rect>
    </property>

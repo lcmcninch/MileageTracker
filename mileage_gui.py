@@ -61,6 +61,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         #Signal/slot connections
         self.actionExit.triggered.connect(self.close)
         self.actionAbout.triggered.connect(self.About)
+        self.actionNew.triggered.connect(self.New)
         self.actionOpen.triggered.connect(self.Open)
         self.actionSave.triggered.connect(self.Save)
         self.actionSave_As.triggered.connect(self.Save_As)
@@ -69,6 +70,9 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.buttonInsert.clicked.connect(self.Insert)
         self.tableModel.dirty.connect(self.setDirty)
         self.dirty.connect(self.setDirty)
+
+        #Set the window title
+        self.changeWindowTitle()
 
     def closeEvent(self, event):
         """
@@ -103,6 +107,24 @@ class mileageGui(uiform, QtGui.QMainWindow):
         msg_box.setText(__version__)
         msg_box.exec_()
         print self.viewTable.verticalScrollBar().maximum()
+
+    def New(self):
+        """ Create a new file """
+        # Check to save current file
+        if self._dirty:
+            message_box = self.createSaveChangesToCurrent()
+            value = message_box.exec_()
+            if value == message_box.Yes:
+                value = self.SaveFile(False)
+            if value == message_box.Cancel:
+                return
+
+        # Make changes
+        self._currentFile = None
+        self.tableModel.changeDataset(mileageList())
+        self._dirty = False
+        self.changeWindowTitle()
+        self.editDate.setFocus(QtCore.Qt.TabFocusReason)
 
     def Open(self, filename=None):
         """ Opens a new csv file """
@@ -141,7 +163,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
                     odometer = float(odometer)
                 price = d[lhead.index('price')]
                 if price:
-                    price = float(price.replace('$',''))
+                    price = float(price.replace('$', ''))
                 fillup = d[lhead.index('fillup')]
                 e = mileageEntry(d[lhead.index('date')],
                                  d[lhead.index('town')],
@@ -217,6 +239,8 @@ class mileageGui(uiform, QtGui.QMainWindow):
     def changeWindowTitle(self, filename=None):
         """ Simple helper function to change the window title """
         file_path = filename if filename else self._currentFile
+        if not file_path:
+            file_path = 'Untitled'
         if self._dirty:
             file_path = ''.join(['*', file_path])
         win_title = 'Fuel Mileage - ' + file_path
@@ -240,7 +264,10 @@ class mileageGui(uiform, QtGui.QMainWindow):
             self.kwargs = kwargs
 
         def redo(self):
-            previous = self.parent.tableModel.dataset[-1]
+            try:
+                previous = self.parent.tableModel.dataset[-1]
+            except IndexError:
+                previous = None
             self.entry = mileageEntry(previous=previous, **self.kwargs)
             self.parent.tableModel.insertRow(self.entry)
             self.parent.viewTable.scrollToBottom()
@@ -264,7 +291,7 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     myapp = mileageGui()
 
-    myapp.Open('../FuelRecord.csv')
+#     myapp.Open('../FuelRecord.csv')
 
 #    with open('..\FuelRecord.csv','rb') as f:
 #        reader = csv.reader(f)

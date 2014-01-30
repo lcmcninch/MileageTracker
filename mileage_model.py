@@ -1,8 +1,3 @@
-# $Rev$
-# $LastChangedDate$
-# $URL$
-__version__ = '$Id$'.replace('$', '')
-
 from PyQt4 import QtCore, QtGui
 from mileage_class import mileageList
 

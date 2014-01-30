@@ -1,8 +1,3 @@
-# $Rev$
-# $LastChangedDate$
-# $URL$
-__version__ = '$Id$'.replace('$', '')
-
 from os import linesep
 from fieldobjects import FieldObject, FieldObjectContainer
 

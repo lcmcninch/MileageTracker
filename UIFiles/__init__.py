@@ -1,10 +1,6 @@
 #!/usr/bin/python
 # Original Author: Christopher Nyland
 # Original Creation Date: 2012/09/14
-# $Rev$
-# $LastChangedDate$
-__version__ = '$Id$'.replace('$', '')
-
 """
 This __init__ file dynamically compiles all the UI files in its directory,
 interrogates them for there class names. And then imports those class names

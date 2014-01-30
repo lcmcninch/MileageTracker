@@ -1,9 +1,6 @@
 #!/usr/bin/python
 # Original Author: Luke McNinch
 # Original Creation Date: 2013/11/13
-# $Rev$
-# $LastChangedDate$
-__version__ = '$Id$'.replace('$', '')
 
 import sys
 from PyQt4.QtGui import QApplication, QPixmap, QSplashScreen
@@ -28,7 +25,7 @@ app.processEvents()
 from mileage_gui import mileageGui
 myapp = mileageGui()
 myapp.show()
-myapp.Open('../FuelRecord.csv')
+myapp.Open('../GolfFuelRecord.csv')
 
 # Close the splash screen
 splash.finish(myapp)

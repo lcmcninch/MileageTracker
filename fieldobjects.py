@@ -1,12 +1,6 @@
 #!/usr/bin/python
 # Original Author: Christopher Nyland
 # Original Creation Date: 2012/08/08
-# $Revision$
-# $URL$
-# $LastChangedBy$
-# $LastChangedDate$
-
-__version__ = '$Id$'.replace('$', '')
 
 import types
 import exceptions
@@ -241,6 +235,3 @@ class FieldValue(object):
             self._vtype = value
         else:
             raise exceptions.TypeError('NotAValidTypeError')
-
-if __name__ == "__main__":
-    print(__version__)

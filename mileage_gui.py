@@ -1,8 +1,3 @@
-# $Rev$
-# $LastChangedDate$
-# $URL$
-__version__ = '$Id$'.replace('$', '')
-
 import os
 from PyQt4 import QtCore, QtGui
 import csv
@@ -105,7 +100,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         msg_box = QtGui.QMessageBox()
         msg_box.setIcon(QtGui.QMessageBox.Information)
         msg_box.setWindowTitle('About')
-        msg_box.setText(__version__)
+        msg_box.setText('Mileage Tracker')
         msg_box.exec_()
         print self.viewTable.verticalScrollBar().maximum()
 

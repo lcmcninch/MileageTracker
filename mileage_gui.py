@@ -1,3 +1,4 @@
+#! /usr/bin/python
 import os
 from PyQt4 import QtCore, QtGui
 import csv
@@ -42,7 +43,8 @@ class mileageGui(uiform, QtGui.QMainWindow):
                 if str(k) in defaults:
                     defaults[str(k)] = v
         self.options = defaults
-        if not os.path.exists(self.options['currentfile']):
+        currentfile = self.options['currentfile']
+        if currentfile and not os.path.exists(currentfile):
             self.options['currentfile'] = None
 
         #Set up application data

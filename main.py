@@ -25,9 +25,7 @@ app.processEvents()
 from mileage_gui import mileageGui
 myapp = mileageGui()
 myapp.show()
-myapp.Open('../GolfFuelRecord.csv')
 
 # Close the splash screen
 splash.finish(myapp)
-
 app.exec_()

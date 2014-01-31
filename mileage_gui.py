@@ -35,13 +35,22 @@ class mileageGui(uiform, QtGui.QMainWindow):
                 settings.value("MainWindow/Geometry").toByteArray())
         self._initHeaderState = settings.value('TableView/HeaderState')
 
+        defaults = {'currentfile': None}
+        options = settings.value("options").toPyObject()
+        if options:
+            for k, v in options.iteritems():
+                if str(k) in defaults:
+                    defaults[str(k)] = v
+        self.options = defaults
+        if not os.path.exists(self.options['currentfile']):
+            self.options['currentfile'] = None
+
         #Set up application data
         # self._metapath = QtCore.QDir.homePath()
         self._metapath = os.getcwd()
         self._dirty = False
         self._checkSave = True
         self._edits = [self.editOdometer, self.editGallons, self.editPrice]
-        self._currentFile = None
         self.editDate.setDate(datetime.now())
         self.editDate.setCurrentSection(QtGui.QDateTimeEdit.DaySection)
 
@@ -67,8 +76,14 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.tableModel.dirty.connect(self.setDirty)
         self.dirty.connect(self.setDirty)
 
-        #Set the window title
-        self.New()
+        QtCore.QTimer.singleShot(0, self.startup)
+
+    def startup(self):
+        """ Open a new or existing file to start with """
+        if self.options['currentfile']:
+            self.Open(self.options['currentfile'])
+        else:
+            self.New()
 
     def closeEvent(self, event):
         """
@@ -90,6 +105,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
                           self.saveGeometry()))
             settings.setValue('TableView/HeaderState',
                           self.viewTable.horizontalHeader().saveState())
+            settings.setValue("options", QtCore.QVariant(self.options))
 
     def showEvent(self, event):
         """ Implemented to setup table view geometry """
@@ -116,7 +132,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
                 return
 
         # Make changes
-        self._currentFile = None
+        self.options['currentfile'] = None
         self.tableModel.changeDataset(mileageList())
         self._dirty = False
         self.changeWindowTitle()
@@ -142,7 +158,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
 
         if fname:
             self._metapath = os.path.dirname(fname)
-            self._currentFile = fname
+            self.options['currentfile'] = fname
             with open(fname, 'rb') as f:
                 reader = csv.reader(f)
                 header = reader.next()
@@ -190,16 +206,16 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.SaveFile(True)
 
     def SaveFile(self, checksave=True):
-        fname = self._currentFile
-        if checksave or not self._currentFile:
-            pth = self._currentFile if self._currentFile else self._metapath
+        fname = self.options['currentfile']
+        if checksave or not fname:
+            pth = self._metapath
             fname = str(QtGui.QFileDialog.getSaveFileName(self,
                           'Save file', directory=pth,
                           filter='CSV Files (*.csv)'))
 
         if fname:
             self._metapath = os.path.dirname(fname)
-            self._currentFile = fname
+            self.self.options['currentfile'] = fname
             try:
                 fid = open(fname, 'wb')
             except IOError:
@@ -246,7 +262,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
 
     def changeWindowTitle(self, filename=None):
         """ Simple helper function to change the window title """
-        file_path = filename if filename else self._currentFile
+        file_path = filename if filename else self.options['currentfile']
         if not file_path:
             file_path = 'Untitled'
         if self._dirty:
@@ -301,45 +317,5 @@ if __name__ == "__main__":
     import sys
     app = QtGui.QApplication(sys.argv)
     myapp = mileageGui()
-
-    myapp.Open('../GolfFuelRecord.csv')
-
-#    with open('..\FuelRecord.csv','rb') as f:
-#        reader = csv.reader(f)
-#        header = reader.next()
-#        lhead = [x.lower() for x in header]
-#        #pdb.set_trace()
-#        data = [row for row in reader]
-#    m = mileageList()
-#    for d in data:
-#        previous = None
-#        gallons = d[lhead.index('gallons')]
-#        if len(m) and gallons:
-#            gallons = float(gallons)
-#            previous = m[-1]
-#        odometer = d[lhead.index('odometer')]
-#        if odometer:
-#            odometer = float(odometer)
-#        ppg = d[lhead.index('ppg')]
-#        if ppg:
-#            ppg = float(ppg)
-#        # fillup = True if d[lhead.index('mpg')] else False
-#        fillup = d[lhead.index('fillup')]
-#        e = mileageEntry(d[lhead.index('date')],
-#                         d[lhead.index('town')],
-#                         odometer, gallons, ppg,
-#                         fillup, previous)
-#        m.append(e)
-#
-#    myapp.viewTable.model().changeDataset(m)
-##    myapp.viewTable.resizeRowsToContents()
-##    myapp.viewTable.resizeColumnsToContents()
-
     myapp.show()
-
-    #odometer = list(zip(*data)[2])
-    # pdb.set_trace()
-    # odometer = [float(k) for k in list(zip(*data)[2])]
-    #try operator.itemgetter
-
     app.exec_()

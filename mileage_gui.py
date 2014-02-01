@@ -31,11 +31,18 @@ class mileageGui(uiform, QtGui.QMainWindow):
 
         # Get settings object
         settings = QtCore.QSettings()
+
+        #Recent files list
+        stringlist = settings.value("recentfiles").toPyObject()
+        self.recentFileList = list(stringlist) if stringlist else []
+        self.createRecentFileMenu()
+
         #Restore window geometry
         self.restoreGeometry(
                 settings.value("MainWindow/Geometry").toByteArray())
         self._initHeaderState = settings.value('TableView/HeaderState')
 
+        #Restore other options and settings
         defaults = {'currentfile': None}
         options = settings.value("options").toPyObject()
         if options:
@@ -108,6 +115,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
             settings.setValue('TableView/HeaderState',
                           self.viewTable.horizontalHeader().saveState())
             settings.setValue("options", QtCore.QVariant(self.options))
+            settings.setValue("recentfiles", QtCore.QVariant(self.recentFileList))
 
     def showEvent(self, event):
         """ Implemented to setup table view geometry """
@@ -154,11 +162,12 @@ class mileageGui(uiform, QtGui.QMainWindow):
         if filename:
             fname = os.path.abspath(filename)
         else:
-            fname = str(QtGui.QFileDialog.getOpenFileName(self,
+            fname = QtGui.QFileDialog.getOpenFileName(self,
                           'Open file', directory=self._metapath,
-                          filter='CSV Files (*.csv)'))
+                          filter='CSV Files (*.csv)')
 
         if fname:
+            fname = str(QtCore.QDir.toNativeSeparators(fname))
             self._metapath = os.path.dirname(fname)
             self.options['currentfile'] = fname
             with open(fname, 'rb') as f:
@@ -200,6 +209,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
             self.changeWindowTitle()
             self.editDate.setFocus(QtCore.Qt.TabFocusReason)
             self.checkFresh.setChecked(False)
+            self.addToRecentFileList(fname)
 
     def Save(self):
         self.SaveFile(False)
@@ -217,7 +227,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
 
         if fname:
             self._metapath = os.path.dirname(fname)
-            self.self.options['currentfile'] = fname
+            self.options['currentfile'] = fname
             try:
                 fid = open(fname, 'wb')
             except IOError:
@@ -227,6 +237,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
                     self.tableModel.dataset.write(fid, ftype='csv')
                 self._dirty = False
                 self.changeWindowTitle()
+                self.addToRecentFileList(fname)
             return True
 
         return False
@@ -271,6 +282,30 @@ class mileageGui(uiform, QtGui.QMainWindow):
             file_path = ''.join(['*', file_path])
         win_title = 'Fuel Mileage - ' + file_path
         self.setWindowTitle(win_title)
+
+    def createRecentFileMenu(self):
+        """ Create the Recent File Menu """
+        menu = QtGui.QMenu()
+        sm = QtCore.QSignalMapper(self)
+        sm.mapped[QtCore.QString].connect(self.Open)
+        for rfile in self.recentFileList[:]:
+            if os.path.exists(rfile):
+                a = QtGui.QAction(rfile, self)
+                sm.setMapping(a, str(rfile))
+                a.triggered.connect(sm.map)
+                menu.addAction(a)
+            else:
+                self.recentFileList.remove(rfile)
+        self.actionRecent_Files.setMenu(menu)
+
+    def addToRecentFileList(self, rfile):
+        """ Add file to the recent file list menu also refresh the menu """
+        if rfile in self.recentFileList:
+            self.recentFileList.remove(rfile)
+        if len(self.recentFileList) > 9:
+            self.recentFileList.pop(-1)
+        self.recentFileList.insert(0, rfile)
+        self.createRecentFileMenu()
 
     #               #
     # Undo Commands #

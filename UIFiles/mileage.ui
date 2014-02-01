@@ -187,9 +187,7 @@
         </layout>
        </item>
       </layout>
-      <zorder>horizontalLayoutWidget</zorder>
       <zorder></zorder>
-      <zorder>horizontalLayoutWidget_2</zorder>
      </widget>
     </item>
    </layout>
@@ -211,6 +209,7 @@
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
     <addaction name="actionSave_As"/>
+    <addaction name="actionRecent_Files"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -291,6 +290,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionRecent_Files">
+   <property name="text">
+    <string>Recent Files</string>
    </property>
   </action>
  </widget>

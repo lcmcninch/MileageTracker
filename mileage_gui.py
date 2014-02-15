@@ -28,6 +28,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
 
         # Setup the undo stack
         self.undoStack = QtGui.QUndoStack(self)
+        self.undoStack.cleanChanged.connect(self.undoCleanSlot)
 
         # Get settings object
         settings = QtCore.QSettings()
@@ -207,6 +208,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
 
             self._dirty = False
             self.changeWindowTitle()
+            self.undoStack.clear()
             self.editDate.setFocus(QtCore.Qt.TabFocusReason)
             self.checkFresh.setChecked(False)
             self.addToRecentFileList(fname)
@@ -226,19 +228,22 @@ class mileageGui(uiform, QtGui.QMainWindow):
                           filter='CSV Files (*.csv)'))
 
         if fname:
+            fname = str(QtCore.QDir.toNativeSeparators(fname))
             self._metapath = os.path.dirname(fname)
             self.options['currentfile'] = fname
             try:
                 fid = open(fname, 'wb')
             except IOError:
                 warningBox('{}\nis locked. Please try again!'.format(fname))
+                return False
             else:
                 with fid:
                     self.tableModel.dataset.write(fid, ftype='csv')
+                self.undoStack.setClean()
                 self._dirty = False
                 self.changeWindowTitle()
                 self.addToRecentFileList(fname)
-            return True
+                return True
 
         return False
 
@@ -267,6 +272,10 @@ class mileageGui(uiform, QtGui.QMainWindow):
             self.checkFillup.setEnabled(False)
         else:
             self.checkFillup.setEnabled(True)
+
+    def undoCleanSlot(self, value):
+        self._dirty = not value
+        self.changeWindowTitle()
 
     def setDirty(self):
         """ Slot to set the dirty flag when changes have been made """

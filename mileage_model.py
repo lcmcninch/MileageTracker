@@ -157,11 +157,46 @@ class TableModel(QtCore.QAbstractTableModel):
 
 
 class mileageDelegate(QtGui.QStyledItemDelegate):
+    """A delegate that allows for checkbox cells and different editor types
+
+    Most work is based on the example given in the following StackOverflow
+    answer: http://stackoverflow.com/a/17788371
+    """
 
     def __init__(self, parent=None):
         super(mileageDelegate, self).__init__(parent)
 
+    def paint(self, painter, option, index):
+        """Re-implemented to paint checkboxes when necessary"""
+        field = index.model().dataset.fieldobjs[index.column()]
+        if field.editor == field.CheckBoxEditor:
+            checked = index.data().toBool()
+            check_box_style_option = QtGui.QStyleOptionButton()
+            #Handle editable and enabled flags
+            if not (index.flags() & QtCore.Qt.ItemIsEditable):
+                check_box_style_option.state |= QtGui.QStyle.State_ReadOnly
+            if index.flags() & QtCore.Qt.ItemIsEnabled:
+                check_box_style_option.state |= QtGui.QStyle.State_Enabled
+
+            #Set the check state
+            if checked:
+                check_box_style_option.state |= QtGui.QStyle.State_On
+            else:
+                check_box_style_option.state |= QtGui.QStyle.State_Off
+
+            check_box_style_option.rect = self.getCheckBoxRect(option)
+
+            #Paint the box then restore the painter
+            painter.save()
+            QtGui.QApplication.style().drawControl(QtGui.QStyle.CE_CheckBox,
+                                                   check_box_style_option,
+                                                   painter)
+            painter.restore()
+        else:
+            QtGui.QStyledItemDelegate.paint(self, painter, option, index)
+
     def createEditor(self, parent, option, index):
+        """Re-implemented to allow for non-standard cell editors"""
         field = index.model().dataset.fieldobjs[index.column()]
         if field.editor == field.DateEditor:
             de = QtGui.QDateEdit(parent)
@@ -170,8 +205,70 @@ class mileageDelegate(QtGui.QStyledItemDelegate):
             spinbox = QtGui.QDoubleSpinBox(parent)
             spinbox.setDecimals(3)
             return spinbox
+        elif field.editor == field.CheckBoxEditor:
+            #Checkbox has no editor since it is its own editor
+            return
         else:
-            return QtGui.QStyledItemDelegate.createEditor(self, parent, option, index)
+            return QtGui.QStyledItemDelegate.createEditor(self, parent,
+                                                          option, index)
+
+    def editorEvent(self, event, model, option, index):
+        """Re-implemented to handle the checkbox as an editor"""
+        field = index.model().dataset.fieldobjs[index.column()]
+        if field.editor == field.CheckBoxEditor:
+            # Change the data in the model and the state of the check box
+            # if the user presses the left mouse button or presses
+            # Key_Space or Key_Select and this cell is editable.
+            # Otherwise do nothing.
+            if not (index.flags() & QtCore.Qt.ItemIsEditable):
+                return False
+
+            # Do not change the check box-state
+            if (event.type() == QtCore.QEvent.MouseButtonRelease or
+                event.type() == QtCore.QEvent.MouseButtonDblClick):
+                if (event.button() != QtCore.Qt.LeftButton or not
+                    self.getCheckBoxRect(option).contains(event.pos())):
+                    return False
+                if event.type() == QtCore.QEvent.MouseButtonDblClick:
+                    return True
+            elif event.type() == QtCore.QEvent.KeyPress:
+                if (event.key() != QtCore.Qt.Key_Space and
+                    event.key() != QtCore.Qt.Key_Select):
+                    return False
+            else:
+                return False
+
+            # Change the check box-state
+            self.setModelData(None, model, index)
+            return True
+        else:
+            return QtGui.QStyledItemDelegate.editorEvent(self, event, model,
+                                                   option, index)
+
+    def setModelData(self, editor, model, index):
+        field = index.model().dataset.fieldobjs[index.column()]
+        if field.editor == field.CheckBoxEditor:
+            value = index.data().toBool()
+            newValue = not value
+            model.setData(index, QtCore.QVariant(newValue), QtCore.Qt.EditRole)
+        else:
+            QtGui.QStyledItemDelegate.setModelData(self, editor, model, index)
+        # Emit dataChanged here for all indices because if this field is
+        # being copied the check box editor doesn't refresh the entire view
+        # and then there will be a lag in the update of the copied data.
+        model.dataChanged.emit(QtCore.QModelIndex(), QtCore.QModelIndex())
+
+    def getCheckBoxRect(self, option):
+        """Returns the QRect for the given checkbox style option"""
+        check_box_style_option = QtGui.QStyleOptionButton()
+        check_box_rect = QtGui.QApplication.style().subElementRect(QtGui.QStyle.SE_CheckBoxIndicator, check_box_style_option, None)
+        check_box_point = QtCore.QPoint(option.rect.x() +
+                            option.rect.width() / 2 -
+                            check_box_rect.width() / 2,
+                            option.rect.y() +
+                            option.rect.height() / 2 -
+                            check_box_rect.height() / 2)
+        return QtCore.QRect(check_box_point, check_box_rect.size())
 
 
 class mileageTable(QtGui.QTableView):

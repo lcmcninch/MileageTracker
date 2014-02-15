@@ -19,6 +19,7 @@ class mileageList(list):
 
         # Field settings
         self.fieldobjs['Gallons'].editor = FieldObject.DoubleSpinBoxEditor
+        self.fieldobjs['fillup'].editor = FieldObject.CheckBoxEditor
 #         self.fieldobjs['Date'].editor = FieldObject.DateEditor
 
     def removeEntry(self, index):
@@ -52,9 +53,9 @@ class mileageList(list):
 class mileageEntry(object):
 
     displayFields = ['Date', 'Town', 'Odometer', 'Miles', 'Gallons', 'Price',
-                     'Cost', 'MPG']
-    saveFields = displayFields + ['fillup']
-    editableFields = ['Date', 'Town', 'Odometer', 'Gallons', 'Price']
+                     'Cost', 'MPG', 'fillup']
+    saveFields = displayFields
+    editableFields = ['Date', 'Town', 'Odometer', 'Gallons', 'Price', 'fillup']
 
     def __init__(self, date, location, odometer, gallons, price, fillup,
                  previous=None):

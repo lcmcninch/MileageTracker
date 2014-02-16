@@ -4,17 +4,22 @@
 
 from PyQt4.QtGui import QApplication, QPixmap, QSplashScreen
 from PyQt4.QtCore import Qt
-
-
+import sys
+import os.path
 """
 This script imports the minimum modules necessary to display a splash
 screen before importing and displaying the downloader application.
 """
 
-app = QApplication([])
+
+def resource_path(relative):
+    local = getattr(sys, '_MEIPASS', '.')
+    return os.path.join(local, relative)
+
 
 # Create and display the splash screen
-splash_pix = QPixmap('icons\splash_loading.png')
+app = QApplication([])
+splash_pix = QPixmap(resource_path('icons\splash_loading.png'))
 splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
 splash.setMask(splash_pix.mask())
 splash.show()

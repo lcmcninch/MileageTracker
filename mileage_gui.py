@@ -1,4 +1,5 @@
 #! /usr/bin/python
+import sys
 import os
 from PyQt4 import QtCore, QtGui
 import csv
@@ -12,13 +13,18 @@ organization = "McNinch Custom"
 application = "FuelMileage"
 
 
+def resource_path(relative):
+    local = getattr(sys, '_MEIPASS', '.')
+    return os.path.join(local, relative)
+
+
 class mileageGui(uiform, QtGui.QMainWindow):
 
     dirty = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super(mileageGui, self).__init__(parent)
-        self.setWindowIcon(QtGui.QIcon('icons\gas-pump-icon.png'))
+        self.setWindowIcon(QtGui.QIcon(resource_path(r'icons\gas-station-multi-size.ico')))
         self.setupUi(self)
 
         # Setup application organization and application name

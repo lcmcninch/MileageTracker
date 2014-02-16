@@ -51,33 +51,33 @@ def modname(ui_dir, ui_file):
     out_path = os.path.join(out_dir, out_file)
     file_names.append(out_path)
     return (out_dir, out_file)
+    
+if not hasattr(sys, '_MEIPASS'):
+    parser = ClassParser()
+    file_classes = {}
 
+    # Create py files from ui files
+    # file_names is passed around here as it is outside of each functions scope
+    pth = os.path.split(__file__)[0]
+    if not pth:
+        pth = './'
+    if [k for k in os.listdir(pth) if '.ui' in k]:
+        uic.compileUiDir(pth, map=modname, execute=True)
 
-parser = ClassParser()
-file_classes = {}
+    # Parse those py_ui files for the class names
+    for File in file_names:
+        with open(File, 'rb') as fid:
+            code = fid.read()
+        file_classes[File] = parser.parse(code)
 
-# Create py files from ui files
-# file_names is passed around here as it is outside of each functions scope
-pth = os.path.split(__file__)[0]
-if not pth:
-    pth = './'
-if [k for k in os.listdir(pth) if '.ui' in k]:
-    uic.compileUiDir(pth, map=modname, execute=True)
-
-# Parse those py_ui files for the class names
-for File in file_names:
-    with open(File, 'rb') as fid:
-        code = fid.read()
-    file_classes[File] = parser.parse(code)
-
-# Import the Classes
-# First split the file names to get the import modules then append those to the
-# package name in dot format. I the from list include the class names from the
-# AST parse above. Make the import into the local variable "_". Then move the
-# classes we want into the local name space with getattr.
-for File, k_list in file_classes.items():
-    mod = os.path.splitext(os.path.split(File)[1])[0]
-    import_stmt = "{}.{}".format(__package__, mod)
-    _ = __import__(import_stmt, fromlist=k_list)
-    for klass in k_list:
-        locals()[klass] = getattr(_, klass)
+    # Import the Classes
+    # First split the file names to get the import modules then append those to the
+    # package name in dot format. I the from list include the class names from the
+    # AST parse above. Make the import into the local variable "_". Then move the
+    # classes we want into the local name space with getattr.
+    for File, k_list in file_classes.items():
+        mod = os.path.splitext(os.path.split(File)[1])[0]
+        import_stmt = "{}.{}".format(__package__, mod)
+        _ = __import__(import_stmt, fromlist=k_list)
+        for klass in k_list:
+            locals()[klass] = getattr(_, klass)

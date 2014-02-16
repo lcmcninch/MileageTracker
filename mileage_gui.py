@@ -11,7 +11,7 @@ from UIFiles.mileage_Ui import Ui_MainWindow as uiform
 # These are used in the settings
 organization = "McNinch Custom"
 application = "FuelMileage"
-
+version = 0.1
 
 def resource_path(relative):
     local = getattr(sys, '_MEIPASS', '.')
@@ -133,9 +133,9 @@ class mileageGui(uiform, QtGui.QMainWindow):
         msg_box = QtGui.QMessageBox()
         msg_box.setIcon(QtGui.QMessageBox.Information)
         msg_box.setWindowTitle('About')
-        msg_box.setText('Mileage Tracker')
+        msg = 'Mileage Tracker v{}'.format(version)
+        msg_box.setText(msg)
         msg_box.exec_()
-        print self.viewTable.verticalScrollBar().maximum()
 
     def New(self):
         """ Create a new file """

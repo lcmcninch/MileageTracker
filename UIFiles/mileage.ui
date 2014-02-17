@@ -180,7 +180,7 @@
          <item>
           <widget class="QPushButton" name="buttonInsert">
            <property name="text">
-            <string>Insert</string>
+            <string>Add Entry</string>
            </property>
           </widget>
          </item>

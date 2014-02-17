@@ -11,7 +11,8 @@ from UIFiles.mileage_Ui import Ui_MainWindow as uiform
 # These are used in the settings
 organization = "McNinch Custom"
 application = "FuelMileage"
-version = 0.1
+version = '0.2(in-process)'
+
 
 def resource_path(relative):
     local = getattr(sys, '_MEIPASS', '.')
@@ -340,6 +341,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
                       'price': float(pri) if not pri.isEmpty() else None,
                       'fillup': parent.checkFillup.isChecked()}
             self.kwargs = kwargs
+            self.startFresh = parent.checkFresh.isChecked()
 
         def redo(self):
             if (self.parent.checkFresh.isChecked() or
@@ -353,10 +355,12 @@ class mileageGui(uiform, QtGui.QMainWindow):
             for e in self.parent._edits:
                 e.clear()
             self.parent.editDate.setFocus(QtCore.Qt.TabFocusReason)
+            self.parent.checkFresh.setChecked(False)
 
         def undo(self):
             index = self.parent.tableModel.dataset.index(self.entry)
             self.parent.tableModel.removeRows(index)
+            self.parent.checkFresh.setChecked(self.startFresh)
 
 
 def warningBox(message):
@@ -366,7 +370,6 @@ def warningBox(message):
     message_box.exec_()
 
 if __name__ == "__main__":
-    import sys
     app = QtGui.QApplication(sys.argv)
     myapp = mileageGui()
     myapp.show()

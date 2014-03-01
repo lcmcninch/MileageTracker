@@ -13,8 +13,8 @@ class TableModel(QtCore.QAbstractTableModel):
         QtCore.QAbstractListModel.__init__(self, parent)
 
         self.dataset = mileageList() if data is None else data
-        self._special = ['cost', 'price', 'mpg']
-        self._formats = ['${:.2f}', '${:.3f}', '{:.2f}']
+        self._special = ['cost', 'price', 'mpg', 'odometer']
+        self._formats = ['${:.2f}', '${:.3f}', '{:.2f}', '{:,}']
         self.undoStack = undoStack
 
     def rowCount(self, index=model_idx()):

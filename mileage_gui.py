@@ -6,12 +6,13 @@ import csv
 from datetime import datetime
 from mileage_class import mileageEntry, mileageList
 from mileage_model import TableModel, mileageDelegate
+from mileage_database import MileageDatabase
 from UIFiles.mileage_Ui import Ui_MainWindow as uiform
 
 # These are used in the settings
 organization = "McNinch Custom"
 application = "FuelMileage"
-version = '0.2(in-process)'
+version = '0.2(databaseFileBranch)'
 
 
 def resource_path(relative):
@@ -116,6 +117,12 @@ class mileageGui(uiform, QtGui.QMainWindow):
             # This is a yes value
             elif value == message_box.Yes:
                 event.setAccepted(self.SaveFile(False))
+            #Because the database file updates constantly, we have to back
+            #off the undoStack to it's last clean position
+            elif value == message_box.No:
+                dex = self.undoStack.index
+                while dex() > self.undoStack.cleanIndex() and dex() >0:
+                    self.undoStack.undo()
         if event.isAccepted():
             settings = QtCore.QSettings()
             settings.setValue("MainWindow/Geometry", QtCore.QVariant(
@@ -151,13 +158,61 @@ class mileageGui(uiform, QtGui.QMainWindow):
 
         # Make changes
         self.options['currentfile'] = None
-        self.tableModel.changeDataset(mileageList())
+        self.tableModel.changeDataset(MileageDatabase())
         self._dirty = False
         self.changeWindowTitle()
         self.checkFresh.setChecked(True)
         self.editDate.setFocus(QtCore.Qt.TabFocusReason)
 
     def Open(self, filename=None):
+        """ Opens a mtk (Mileage Tracker) file """
+        if self._dirty:
+            message_box = self.createSaveChangesToCurrent()
+            value = message_box.exec_()
+            if value == message_box.Yes:
+                value = self.SaveFile(False)
+            if value == message_box.Cancel:
+                return
+        #Get the new filename
+        if filename:
+            fname = os.path.abspath(filename)
+        else:
+#             fname = QtGui.QFileDialog.getOpenFileName(self,
+#                           'Open file', directory=self._metapath,
+#                           filter='CSV Files (*.csv)')
+            fname = QtGui.QFileDialog.getOpenFileName(self,
+                          'Open file', directory=self._metapath)
+
+        if fname:
+            fname = str(QtCore.QDir.toNativeSeparators(fname))
+            self._metapath = os.path.dirname(fname)
+            self.options['currentfile'] = fname
+            newdb = MileageDatabase(fname)
+#             diskdb = MileageDatabase(fname)
+#             query = ''.join(line for line in diskdb.db.iterdump())
+#             newdb = MileageDatabase(setup=False)
+#             newdb.executescript(query)
+            #Check validity here
+            self.tableModel.changeDataset(newdb)
+            h = self.viewTable.verticalHeader().sectionSizeFromContents(0)
+            self.viewTable.verticalHeader().setDefaultSectionSize(h.height())
+
+            #Populate the combobox
+            self.editLocation.setInsertPolicy(QtGui.QComboBox.InsertAlphabetically)
+            town_list = list(set(self.tableModel.dataset.towns()))
+            if '' in town_list:
+                town_list.remove('')
+            self.editLocation.addItems(sorted(town_list))
+            self.viewTable.scrollToBottom()
+
+            self._dirty = False
+            self.changeWindowTitle()
+            self.undoStack.clear()
+            self.editDate.setFocus(QtCore.Qt.TabFocusReason)
+            self.checkFresh.setChecked(False)
+            self.addToRecentFileList(fname)
+
+    def Import(self, filename=None):
         """ Opens a new csv file """
         if self._dirty:
             message_box = self.createSaveChangesToCurrent()
@@ -230,29 +285,58 @@ class mileageGui(uiform, QtGui.QMainWindow):
         fname = self.options['currentfile']
         if checksave or not fname:
             pth = self._metapath
+#             fname = str(QtGui.QFileDialog.getSaveFileName(self,
+#                           'Save file', directory=pth,
+#                           filter='CSV Files (*.csv)'))
             fname = str(QtGui.QFileDialog.getSaveFileName(self,
-                          'Save file', directory=pth,
-                          filter='CSV Files (*.csv)'))
+                          'Save file', directory=pth))
 
-        if fname:
-            fname = str(QtCore.QDir.toNativeSeparators(fname))
-            self._metapath = os.path.dirname(fname)
-            self.options['currentfile'] = fname
-            try:
-                fid = open(fname, 'wb')
-            except IOError:
-                warningBox('{}\nis locked. Please try again!'.format(fname))
-                return False
+            if fname:
+                fname = str(QtCore.QDir.toNativeSeparators(fname))
+                self._metapath = os.path.dirname(fname)
+                self.options['currentfile'] = fname
+                olddb = self.tableModel.dataset
+                query = ''.join(line for line in olddb.db.iterdump())
+                if os.path.exists(fname):
+                    os.remove(fname)
+                newdb = MileageDatabase(fname, True, False)
+                newdb.executescript(query)
             else:
-                with fid:
-                    self.tableModel.dataset.write(fid, ftype='csv')
-                self.undoStack.setClean()
-                self._dirty = False
-                self.changeWindowTitle()
-                self.addToRecentFileList(fname)
-                return True
+                return False
 
-        return False
+        self.undoStack.setClean()
+        self._dirty = False
+        self.changeWindowTitle()
+        self.addToRecentFileList(fname)
+        return True
+
+#     def SaveFile(self, checksave=True):
+#         fname = self.options['currentfile']
+#         if checksave or not fname:
+#             pth = self._metapath
+#             fname = str(QtGui.QFileDialog.getSaveFileName(self,
+#                           'Save file', directory=pth,
+#                           filter='CSV Files (*.csv)'))
+#
+#         if fname:
+#             fname = str(QtCore.QDir.toNativeSeparators(fname))
+#             self._metapath = os.path.dirname(fname)
+#             self.options['currentfile'] = fname
+#             try:
+#                 fid = open(fname, 'wb')
+#             except IOError:
+#                 warningBox('{}\nis locked. Please try again!'.format(fname))
+#                 return False
+#             else:
+#                 with fid:
+#                     self.tableModel.dataset.write(fid, ftype='csv')
+#                 self.undoStack.setClean()
+#                 self._dirty = False
+#                 self.changeWindowTitle()
+#                 self.addToRecentFileList(fname)
+#                 return True
+#
+#         return False
 
     def createSaveChangesToCurrent(self):
         message = ("Do you want to save the changes to the current"
@@ -335,22 +419,23 @@ class mileageGui(uiform, QtGui.QMainWindow):
             gal = parent.editGallons.text()
             pri = parent.editPrice.text()
             kwargs = {'date': str(parent.editDate.date().toString('MM/dd/yy')),
-                      'location': str(parent.editLocation.currentText()),
+                      'town': str(parent.editLocation.currentText()),
                       'odometer': (float(odo) if not odo.isEmpty() else None),
                       'gallons': float(gal) if not gal.isEmpty() else None,
                       'price': float(pri) if not pri.isEmpty() else None,
-                      'fillup': parent.checkFillup.isChecked()}
+                      'fillup': parent.checkFillup.isChecked(),
+                      'linkback': not parent.checkFresh.isChecked()}
             self.kwargs = kwargs
-            self.startFresh = parent.checkFresh.isChecked()
 
         def redo(self):
-            if (self.parent.checkFresh.isChecked() or
-                len(self.parent.tableModel.dataset) == 0):
-                previous = None
-            else:
-                previous = self.parent.tableModel.dataset[-1]
-            self.entry = mileageEntry(previous=previous, **self.kwargs)
-            self.parent.tableModel.insertRow(self.entry)
+#             if (self.parent.checkFresh.isChecked() or
+#                 len(self.parent.tableModel.dataset) == 0):
+#                 previous = None
+#             else:
+#                 previous = self.parent.tableModel.dataset[-1]
+#             self.entry = mileageEntry(previous=previous, **self.kwargs)
+#             self.parent.tableModel.insertRow(self.entry)
+            self.eid = self.parent.tableModel.insertRow(self.kwargs)
             self.parent.viewTable.scrollToBottom()
             for e in self.parent._edits:
                 e.clear()
@@ -358,9 +443,10 @@ class mileageGui(uiform, QtGui.QMainWindow):
             self.parent.checkFresh.setChecked(False)
 
         def undo(self):
-            index = self.parent.tableModel.dataset.index(self.entry)
-            self.parent.tableModel.removeRows(index)
-            self.parent.checkFresh.setChecked(self.startFresh)
+#             index = self.parent.tableModel.dataset.index(self.entry)
+#             self.parent.tableModel.removeRows(index)
+            self.parent.tableModel.removeRows(self.eid)
+            self.parent.checkFresh.setChecked(not self.kwargs['linkback'])
 
 
 def warningBox(message):

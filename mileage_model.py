@@ -26,8 +26,8 @@ class TableModel(QtCore.QAbstractTableModel):
     def data(self, index, role):
         field = self.dataset.displayFields[index.column()]
         if role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
-            row = index.row()
-            value = self.dataset[row][field]
+            row = index.row() + 1
+            value = self.dataset[row, field]
             #Format special fields
             if value:
                 try:
@@ -43,9 +43,9 @@ class TableModel(QtCore.QAbstractTableModel):
             return font
 
     def setData(self, index, value, role):
-        row = index.row()
+        row = index.row() + 1
         field = self.dataset.displayFields[index.column()]
-        oldvalue = self.dataset[row][field]
+        oldvalue = self.dataset[row, field]
         newvalue = value.toPyObject()
         if not newvalue:
             newvalue = None
@@ -81,21 +81,23 @@ class TableModel(QtCore.QAbstractTableModel):
         return QtCore.Qt.ItemFlags(
                             QtCore.QAbstractTableModel.flags(self, index))
 
-    def insertRow(self, entry, position=None, index=model_idx()):
+    def insertRow(self, kwargs, position=None, index=model_idx()):
         """ Model required method for inserting rows """
         if position is None:
             position = self.rowCount()
         self.beginInsertRows(QtCore.QModelIndex(), position, position)
-        self.dataset.append(entry)
+        eid = self.dataset.addEntry(**kwargs)
         self.endInsertRows()
         self.dataChanged.emit(model_idx(), model_idx())
         self.dirty.emit()
-        return True
+        return eid
 
     def removeRows(self, position, rows=0, index=model_idx()):
         """ Model required function for removing rows """
-        self.beginRemoveRows(model_idx(), position, position + rows)
-        self.dataset.removeEntry(position)
+        print 'removing Rows', position, rows
+        self.beginRemoveRows(model_idx(), position-1, position + rows-1)
+        for k in range(rows+1):
+            self.dataset.removeEntry(position + k)
         self.endRemoveRows()
         self.dirty.emit()
         return True
@@ -120,40 +122,32 @@ class TableModel(QtCore.QAbstractTableModel):
         def __init__(self, index, newvalue, oldvalue, model):
             QtGui.QUndoCommand.__init__(self)
             self.index = index
-            self.row = index.row()
+            self.row = index.row() + 1
             self.field = model.dataset.displayFields[index.column()]
-            self.newvalue = newvalue
-            self.oldvalue = oldvalue
+            self.newvalue = str(newvalue) if isinstance(newvalue, QtCore.QString)\
+                            else newvalue
+            self.oldvalue = str(oldvalue) if isinstance(oldvalue, QtCore.QString)\
+                            else oldvalue
             self.model = model
-            self.success = False
 
         def redo(self):
             model = self.model
             row = self.row
             field = self.field
-            try:
-                model.dataset[row][field] = self.newvalue
-            except AttributeError:
-                #This is meant to handle the case when an invalid field is changed
-                #The Attribute Error would be raised by the mileageEntry class
-                #May not be necessary because those fields shouldn't be editable anyway
-                self.success = False
-            else:
-                model.dataChanged.emit(self.index, self.index)
-                model.dirty.emit()
-                self.success = True
-                model.newActiveCell.emit(self.index)
+            model.dataset[row, field] = self.newvalue
+            model.dataChanged.emit(self.index, self.index)
+            model.dirty.emit()
+            model.newActiveCell.emit(self.index)
 
         def undo(self):
-            if self.success:
-                model = self.model
-                row = self.row
-                field = self.field
-                model.dataset[row][field] = self.oldvalue
-                self.success = False
-                model.dataChanged.emit(self.index, self.index)
-                model.dirty.emit()
-                model.newActiveCell.emit(self.index)
+            model = self.model
+            row = self.row
+            field = self.field
+            model.dataset[row, field] = self.oldvalue
+            self.success = False
+            model.dataChanged.emit(self.index, self.index)
+            model.dirty.emit()
+            model.newActiveCell.emit(self.index)
 
 
 class mileageDelegate(QtGui.QStyledItemDelegate):

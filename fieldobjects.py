@@ -12,7 +12,7 @@ class FieldObject(object):
     LineEditEditor = None
     ComboBoxEditor = 1
     CheckBoxEditor = 2
-    DateEditor = 3
+    DateEditEditor = 3
     SpinBoxEditor = 4
     DoubleSpinBoxEditor = 5
 

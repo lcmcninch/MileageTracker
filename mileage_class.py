@@ -21,11 +21,15 @@ class mileageList(list):
         # Field settings
         self.fieldobjs['Gallons'].editor = FieldObject.DoubleSpinBoxEditor
         self.fieldobjs['fillup'].editor = FieldObject.CheckBoxEditor
-#         self.fieldobjs['Date'].editor = FieldObject.DateEditor
+        self.fieldobjs['Date'].editor = FieldObject.DateEditEditor
 
     def removeEntry(self, index):
         """ Removes and returns the given index """
         return self.pop(index)
+
+    def append(self, value):
+        value.container = self
+        list.append(self, value)
 
     def write(self, fid, ftype='csv', delimiter=','):
         itemString = lambda x: '' if x is None else str(x)
@@ -41,6 +45,11 @@ class mileageList(list):
             for x in self:
                 fid.addEntry(x.date, x.town, x.odometer, x.gallons, x.price,
                                x.fillup, x.previous != None)
+
+    def getFieldByName(self, value):
+        for fieldobj in self.fieldobjs:
+            if fieldobj == value:
+                return fieldobj
 
     @property
     def fields(self):
@@ -58,7 +67,7 @@ class mileageList(list):
 class mileageEntry(object):
 
     displayFields = ['Date', 'Town', 'Odometer', 'Miles', 'Gallons', 'Price',
-                     'Cost', 'MPG', 'fillup']
+                     'Cost', 'MPG', 'fillup'] + ['PreviousDex']
     saveFields = displayFields
     editableFields = ['Date', 'Town', 'Odometer', 'Gallons', 'Price', 'fillup']
 
@@ -79,6 +88,11 @@ class mileageEntry(object):
 
     def __setitem__(self, key, value):
         self.__setattr__(key.lower(), value)
+
+    @property
+    def previousdex(self):
+        if self.previous:
+            return self.container.index(self.previous)
 
     @property
     def date(self):

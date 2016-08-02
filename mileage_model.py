@@ -24,32 +24,38 @@ class TableModel(QtCore.QAbstractTableModel):
         return len(self.dataset.displayFields)
 
     def data(self, index, role):
-        field = self.dataset.displayFields[index.column()]
+        fieldname = self.dataset.displayFields[index.column()]
+        field = self.dataset.getFieldByName(fieldname)
         if role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
             row = index.row()
             value = self.dataset[row][field]
             #Format special fields
             if value:
                 try:
-                    dex = self._special.index(field.lower())
+                    dex = self._special.index(fieldname.lower())
                 except:
                     pass
                 else:
                     value = self._formats[dex].format(value)
             return QtCore.QVariant(value)
-        elif role == QtCore.Qt.FontRole and field.lower() == 'mpg':
+        elif role == QtCore.Qt.FontRole and fieldname.lower() == 'mpg':
             font = QtGui.QFont()
             font.setBold(True)
             return font
 
     def setData(self, index, value, role):
         row = index.row()
-        field = self.dataset.displayFields[index.column()]
+        fieldname = self.dataset.displayFields[index.column()]
+        field = self.dataset.getFieldByName(fieldname)
         oldvalue = self.dataset[row][field]
-        newvalue = value.toPyObject()
+        if field.editor == field.DateEditEditor:
+            newvalue = str(value.toPyObject().toString('MM/dd/yyyy'))
+        else:
+            newvalue = str(value.toString())
         if not newvalue:
             newvalue = None
         if field and index.isValid() and oldvalue != newvalue:
+
             command = self.setDataCmd(index, newvalue, oldvalue, self)
             self.undoStack.push(command)
         return True
@@ -198,7 +204,7 @@ class mileageDelegate(QtGui.QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         """Re-implemented to allow for non-standard cell editors"""
         field = index.model().dataset.fieldobjs[index.column()]
-        if field.editor == field.DateEditor:
+        if field.editor == field.DateEditEditor:
             de = QtGui.QDateEdit(parent)
             return de
         elif field.editor == field.DoubleSpinBoxEditor:
@@ -211,6 +217,23 @@ class mileageDelegate(QtGui.QStyledItemDelegate):
         else:
             return QtGui.QStyledItemDelegate.createEditor(self, parent,
                                                           option, index)
+
+    def setEditorData(self, editor, index):
+        field = index.model().dataset.fields[index.column()]
+        fieldobj = index.model().dataset.getFieldByName(field)
+        feditor = fieldobj.editor
+        data = index.model().data(index, QtCore.Qt.DisplayRole)
+        if data:
+            text = data.toString()
+        else:
+            text = ''
+        if feditor == fieldobj.ComboBoxEditor:
+            editor.lineEdit().setText(text)
+        elif feditor == fieldobj.DateEditEditor:
+            editor.setDate(QtCore.QDate.fromString(text,
+                                                   'MM/dd/yyyy'))
+        else:
+            QtGui.QStyledItemDelegate.setEditorData(self, editor, index)
 
     def editorEvent(self, event, model, option, index):
         """Re-implemented to handle the checkbox as an editor"""

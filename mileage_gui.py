@@ -392,7 +392,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
             odo = parent.editOdometer.text()
             gal = parent.editGallons.text()
             pri = parent.editPrice.text()
-            kwargs = {'date': str(parent.editDate.date().toString('MM/dd/yy')),
+            kwargs = {'date': str(parent.editDate.date().toString('MM/dd/yyyy')),
                       'location': str(parent.editLocation.currentText()),
                       'odometer': (float(odo) if not odo.isEmpty() else None),
                       'gallons': float(gal) if not gal.isEmpty() else None,

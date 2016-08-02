@@ -1,5 +1,6 @@
 from os import linesep
 from fieldobjects import FieldObject, FieldObjectContainer
+from mileage_database import MileageDatabase
 
 
 class mileageList(list):
@@ -36,6 +37,10 @@ class mileageList(list):
                 out = [itemString(x[k]) for k in header]
                 fid.write(delimiter.join(out))
                 fid.write(linesep)
+        elif ftype == 'mtf':
+            for x in self:
+                fid.addEntry(x.date, x.town, x.odometer, x.gallons, x.price,
+                               x.fillup, x.previous != None)
 
     @property
     def fields(self):

@@ -6,17 +6,22 @@ import csv
 from datetime import datetime
 from mileage_class import mileageEntry, mileageList
 from mileage_model import TableModel, mileageDelegate
+from mileage_database import MileageDatabase
 from UIFiles.mileage_Ui import Ui_MainWindow as uiform
 
 # These are used in the settings
 organization = "McNinch Custom"
 application = "FuelMileage"
-version = '0.2(in-process)'
+version = '0.2(database_file_keep_model)'
 
 
 def resource_path(relative):
     local = getattr(sys, '_MEIPASS', '.')
     return os.path.join(local, relative)
+
+
+ffilter = 'Mileage Tracker File (*.mtf);;CSV Files (*.csv)' + \
+          ';;All Files (*)'
 
 
 class mileageGui(uiform, QtGui.QMainWindow):
@@ -92,6 +97,10 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.buttonInsert.clicked.connect(self.Insert)
         self.tableModel.dirty.connect(self.setDirty)
         self.dirty.connect(self.setDirty)
+
+        #Set up a file reader dictionary
+        self._file_readers = {'.csv': self.readcsv,
+                              '.mtf': self.readmtf}
 
         QtCore.QTimer.singleShot(0, self.startup)
 
@@ -172,42 +181,24 @@ class mileageGui(uiform, QtGui.QMainWindow):
         else:
             fname = QtGui.QFileDialog.getOpenFileName(self,
                           'Open file', directory=self._metapath,
-                          filter='CSV Files (*.csv)')
+                          filter=ffilter)
 
         if fname:
             fname = str(QtCore.QDir.toNativeSeparators(fname))
-            self._metapath = os.path.dirname(fname)
             self.options['currentfile'] = fname
-            with open(fname, 'rb') as f:
-                reader = csv.reader(f)
-                header = reader.next()
-                data = [row for row in reader]
-            lhead = [x.lower() for x in header]
-            m = mileageList()
-            for d in data:
-                previous = None
-                gallons = d[lhead.index('gallons')]
-                if len(m) and gallons:
-                    gallons = float(gallons)
-                    previous = m[-1]
-                odometer = d[lhead.index('odometer')]
-                if odometer:
-                    odometer = float(odometer)
-                price = d[lhead.index('price')]
-                if price:
-                    price = float(price.replace('$', ''))
-                fillup = d[lhead.index('fillup')]
-                e = mileageEntry(d[lhead.index('date')],
-                                 d[lhead.index('town')],
-                                 odometer, gallons, price, fillup, previous)
-                m.append(e)
-            self.tableModel.changeDataset(m)
+            self._metapath = os.path.dirname(fname)
+            ext = os.path.splitext(fname)[1]
+
+            #Read the file
+            dataset = self._file_readers[ext](fname)
+            self.tableModel.changeDataset(dataset)
+
             h = self.viewTable.verticalHeader().sectionSizeFromContents(0)
             self.viewTable.verticalHeader().setDefaultSectionSize(h.height())
 
             #Populate the combobox
             self.editLocation.setInsertPolicy(QtGui.QComboBox.InsertAlphabetically)
-            town_list = list(set([e['town'] for e in self.tableModel.dataset]))
+            town_list = list(set([e['town'] for e in dataset]))
             if '' in town_list:
                 town_list.remove('')
             self.editLocation.addItems(sorted(town_list))
@@ -220,6 +211,52 @@ class mileageGui(uiform, QtGui.QMainWindow):
             self.checkFresh.setChecked(False)
             self.addToRecentFileList(fname)
 
+    def readcsv(self, fname):
+        """Read a csv file"""
+        with open(fname, 'rb') as f:
+            reader = csv.reader(f)
+            header = reader.next()
+            data = [row for row in reader]
+        lhead = [x.lower() for x in header]
+        m = mileageList()
+        for d in data:
+            previous = None
+            gallons = d[lhead.index('gallons')]
+            if len(m) and gallons:
+                gallons = float(gallons)
+                previous = m[-1]
+            odometer = d[lhead.index('odometer')]
+            if odometer:
+                odometer = float(odometer)
+            price = d[lhead.index('price')]
+            if price:
+                price = float(price.replace('$', ''))
+            fillup = d[lhead.index('fillup')]
+            e = mileageEntry(d[lhead.index('date')],
+                             d[lhead.index('town')],
+                             odometer, gallons, price, fillup, previous)
+            m.append(e)
+        return m
+
+    def readmtf(self, fname):
+        """Read an mtf database file"""
+        newdb = MileageDatabase(fname)
+        m = mileageList()
+        for k in range(1, len(newdb)+1):
+            previous = m[-1] if newdb.linkback(k) else None
+            gallons = newdb.gallons(k)
+            if gallons:
+                gallons = float(gallons)
+            odometer = newdb.odometer(k)
+            if odometer:
+                odometer = float(odometer)
+            price = newdb.price(k)
+            fillup = newdb.fillup(k)
+            e = mileageEntry(newdb.date(k), newdb.town(k),
+                             odometer, gallons, price, fillup, previous)
+            m.append(e)
+        return m
+
     def Save(self):
         self.SaveFile(False)
 
@@ -231,27 +268,48 @@ class mileageGui(uiform, QtGui.QMainWindow):
         if checksave or not fname:
             pth = self._metapath
             fname = str(QtGui.QFileDialog.getSaveFileName(self,
-                          'Save file', directory=pth,
-                          filter='CSV Files (*.csv)'))
+                          'Save file', directory=pth, filter=ffilter))
 
         if fname:
             fname = str(QtCore.QDir.toNativeSeparators(fname))
             self._metapath = os.path.dirname(fname)
             self.options['currentfile'] = fname
-            try:
-                fid = open(fname, 'wb')
-            except IOError:
-                warningBox('{}\nis locked. Please try again!'.format(fname))
-                return False
+            if self.isSQLite(fname):
+                return self.writesql(fname)
             else:
-                with fid:
-                    self.tableModel.dataset.write(fid, ftype='csv')
-                self.undoStack.setClean()
-                self._dirty = False
-                self.changeWindowTitle()
-                self.addToRecentFileList(fname)
-                return True
+                return self.writecsv(fname)
 
+        return False
+
+    def writecsv(self, fname):
+        try:
+            fid = open(fname, 'wb')
+        except IOError:
+            warningBox('{}\nis locked. Please try again!'.format(fname))
+            return False
+        else:
+            with fid:
+                self.tableModel.dataset.write(fid, ftype='csv')
+            self.undoStack.setClean()
+            self._dirty = False
+            self.changeWindowTitle()
+            self.addToRecentFileList(fname)
+            return True
+
+    def writesql(self, fname):
+        if os.path.exists(fname):
+            os.remove(fname)
+        newdb = MileageDatabase(fname)
+        self.tableModel.dataset.write(newdb, 'mtf')
+        self.undoStack.setClean()
+        self._dirty = False
+        self.changeWindowTitle()
+        self.addToRecentFileList(fname)
+        return True
+
+    def isSQLite(self, fname):
+        if os.path.splitext(fname)[1] in ['.db', '.mtf']:
+            return True
         return False
 
     def createSaveChangesToCurrent(self):

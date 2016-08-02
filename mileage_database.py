@@ -202,10 +202,10 @@ class MileageDatabase(object):
 
     def odometer(self, idx):
         odo = self.get_value('odometer', idx)
-        try:
-            odo = float(self.get_value('odometer', idx))
-        except ValueError:
-            odo = None
+#         try:
+#             odo = float(self.get_value('odometer', idx))
+#         except ValueError:
+#             odo = None
         return odo
 
     def price(self, idx):

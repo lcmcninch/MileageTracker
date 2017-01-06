@@ -45,17 +45,17 @@ class mileageGui(uiform, QtGui.QMainWindow):
         # Get settings object
         settings = QtCore.QSettings()
 
-        #Recent files list
+        # Recent files list
         stringlist = settings.value("recentfiles").toPyObject()
         self.recentFileList = list(stringlist) if stringlist else []
         self.createRecentFileMenu()
 
-        #Restore window geometry
+        # Restore window geometry
         self.restoreGeometry(
-                settings.value("MainWindow/Geometry").toByteArray())
+            settings.value("MainWindow/Geometry").toByteArray())
         self._initHeaderState = settings.value('TableView/HeaderState')
 
-        #Restore other options and settings
+        # Restore other options and settings
         defaults = {'currentfile': None}
         options = settings.value("options").toPyObject()
         if options:
@@ -67,7 +67,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         if currentfile and not os.path.exists(currentfile):
             self.options['currentfile'] = None
 
-        #Set up application data
+        # Set up application data
         # self._metapath = QtCore.QDir.homePath()
         self._metapath = os.getcwd()
         self._dirty = False
@@ -76,7 +76,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.editDate.setDate(datetime.now())
         self.editDate.setCurrentSection(QtGui.QDateTimeEdit.DaySection)
 
-        #Set up the table model
+        # Set up the table model
         self.tableModel = TableModel(self.undoStack)
         self.viewTable.setModel(self.tableModel)
         self.tableModel.newActiveCell.connect(self.viewTable.selectCell)
@@ -84,7 +84,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         dg = mileageDelegate(self)
         self.viewTable.setItemDelegate(dg)
 
-        #Signal/slot connections
+        # Signal/slot connections
         self.actionExit.triggered.connect(self.close)
         self.actionAbout.triggered.connect(self.About)
         self.actionNew.triggered.connect(self.New)
@@ -128,16 +128,16 @@ class mileageGui(uiform, QtGui.QMainWindow):
         if event.isAccepted():
             settings = QtCore.QSettings()
             settings.setValue("MainWindow/Geometry", QtCore.QVariant(
-                          self.saveGeometry()))
+                self.saveGeometry()))
             settings.setValue('TableView/HeaderState',
-                          self.viewTable.horizontalHeader().saveState())
+                              self.viewTable.horizontalHeader().saveState())
             settings.setValue("options", QtCore.QVariant(self.options))
             settings.setValue("recentfiles", QtCore.QVariant(self.recentFileList))
 
     def showEvent(self, event):
         """ Implemented to setup table view geometry """
         self.viewTable.horizontalHeader().restoreState(
-                self._initHeaderState.toByteArray())
+            self._initHeaderState.toByteArray())
 
     def About(self):
         msg_box = QtGui.QMessageBox()
@@ -175,7 +175,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
                 value = self.SaveFile(False)
             if value == message_box.Cancel:
                 return
-        #Get the new filename
+        # Get the new filename
         if filename:
             fname = os.path.abspath(filename)
         else:
@@ -196,7 +196,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
             h = self.viewTable.verticalHeader().sectionSizeFromContents(0)
             self.viewTable.verticalHeader().setDefaultSectionSize(h.height())
 
-            #Populate the combobox
+            # Populate the combobox
             self.editLocation.setInsertPolicy(QtGui.QComboBox.InsertAlphabetically)
             town_list = list(set([e['town'] for e in dataset]))
             if '' in town_list:

@@ -147,7 +147,7 @@ class mileageEntry(object):
         it returns None, meaning that it can't be determined how many gallons
         were used.
         """
-        return addPrevious(self, self.gallons, 'gallons')
+        return addPrevious(self, self.gallons, 'sum_gallons')
 
     @property
     def miles(self):

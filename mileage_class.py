@@ -32,7 +32,8 @@ class mileageList(list):
         list.append(self, value)
 
     def write(self, fid, ftype='csv', delimiter=','):
-        itemString = lambda x: '' if x is None else str(x)
+        def itemString(x):
+            return '' if x is None else str(x)
         if ftype == 'csv':
             header = self.saveFields
             fid.write(delimiter.join(header))
@@ -79,8 +80,8 @@ class mileageEntry(object):
         self._gallons = float(gallons) if gallons else None
         self._price = float(price) if price else None
         self.fillup = (False if (isinstance(fillup, str) and
-                                fillup.lower() in ['false', 'f', '0']) else
-                                bool(fillup))
+                                 fillup.lower() in ['false', 'f', '0']) else
+                       bool(fillup))
         self.previous = previous
 
     def __getitem__(self, key):
@@ -161,7 +162,7 @@ class mileageEntry(object):
         If this entry cannot be linked to a previous entry that was a fillup,
         it returns None, meaning there is no basis for mpg calculations.
         """
-        if not self.odometer:
+        if not self.odometer or not self.fillup:
             return None
         prev_obj = self.previous
         while True:
@@ -177,7 +178,7 @@ class mileageEntry(object):
     def mpg(self):
         if not self.fillup or self.miles is None or self.gallons is None:
             return None
-        return self.miles/float(self.sum_gallons)
+        return self.miles / float(self.sum_gallons)
 
     @property
     def cost(self):

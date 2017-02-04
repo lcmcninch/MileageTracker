@@ -29,7 +29,7 @@ class TableModel(QtCore.QAbstractTableModel):
         if role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
             row = index.row()
             value = self.dataset[row][field]
-            #Format special fields
+            # Format special fields
             if value:
                 try:
                     dex = self._special.index(fieldname.lower())
@@ -50,14 +50,14 @@ class TableModel(QtCore.QAbstractTableModel):
         oldvalue = self.dataset[row][field]
         if field.editor == field.DateEditEditor:
             newvalue = str(value.toPyObject().toString('MM/dd/yyyy'))
+        elif field.editor == field.CheckBoxEditor:
+            newvalue = value.toBool()
         else:
             newvalue = str(value.toString())
-        if not newvalue:
-            newvalue = None
         if field and index.isValid() and oldvalue != newvalue:
-
             command = self.setDataCmd(index, newvalue, oldvalue, self)
             self.undoStack.push(command)
+        self.dataChanged.emit(index, index)
         return True
 
     def headerData(self, section, orientation, role):
@@ -82,10 +82,10 @@ class TableModel(QtCore.QAbstractTableModel):
             return QtCore.Qt.ItemEnabled
         elif field in self.dataset.editableFields:
             return QtCore.Qt.ItemFlags(
-                            QtCore.QAbstractTableModel.flags(self, index) |
-                            QtCore.Qt.ItemIsEditable)
+                QtCore.QAbstractTableModel.flags(self, index) |
+                QtCore.Qt.ItemIsEditable)
         return QtCore.Qt.ItemFlags(
-                            QtCore.QAbstractTableModel.flags(self, index))
+            QtCore.QAbstractTableModel.flags(self, index))
 
     def insertRow(self, entry, position=None, index=model_idx()):
         """ Model required method for inserting rows """
@@ -140,9 +140,9 @@ class TableModel(QtCore.QAbstractTableModel):
             try:
                 model.dataset[row][field] = self.newvalue
             except AttributeError:
-                #This is meant to handle the case when an invalid field is changed
-                #The Attribute Error would be raised by the mileageEntry class
-                #May not be necessary because those fields shouldn't be editable anyway
+                # This is meant to handle the case when an invalid field is changed
+                # The Attribute Error would be raised by the mileageEntry class
+                # May not be necessary because those fields shouldn't be editable anyway
                 self.success = False
             else:
                 model.dataChanged.emit(self.index, self.index)
@@ -178,13 +178,13 @@ class mileageDelegate(QtGui.QStyledItemDelegate):
         if field.editor == field.CheckBoxEditor:
             checked = index.data().toBool()
             check_box_style_option = QtGui.QStyleOptionButton()
-            #Handle editable and enabled flags
+            # Handle editable and enabled flags
             if not (index.flags() & QtCore.Qt.ItemIsEditable):
                 check_box_style_option.state |= QtGui.QStyle.State_ReadOnly
             if index.flags() & QtCore.Qt.ItemIsEnabled:
                 check_box_style_option.state |= QtGui.QStyle.State_Enabled
 
-            #Set the check state
+            # Set the check state
             if checked:
                 check_box_style_option.state |= QtGui.QStyle.State_On
             else:
@@ -192,7 +192,7 @@ class mileageDelegate(QtGui.QStyledItemDelegate):
 
             check_box_style_option.rect = self.getCheckBoxRect(option)
 
-            #Paint the box then restore the painter
+            # Paint the box then restore the painter
             painter.save()
             QtGui.QApplication.style().drawControl(QtGui.QStyle.CE_CheckBox,
                                                    check_box_style_option,
@@ -212,7 +212,7 @@ class mileageDelegate(QtGui.QStyledItemDelegate):
             spinbox.setDecimals(3)
             return spinbox
         elif field.editor == field.CheckBoxEditor:
-            #Checkbox has no editor since it is its own editor
+            # Checkbox has no editor since it is its own editor
             return
         else:
             return QtGui.QStyledItemDelegate.createEditor(self, parent,
@@ -248,15 +248,15 @@ class mileageDelegate(QtGui.QStyledItemDelegate):
 
             # Do not change the check box-state
             if (event.type() == QtCore.QEvent.MouseButtonRelease or
-                event.type() == QtCore.QEvent.MouseButtonDblClick):
+                    event.type() == QtCore.QEvent.MouseButtonDblClick):
                 if (event.button() != QtCore.Qt.LeftButton or not
-                    self.getCheckBoxRect(option).contains(event.pos())):
+                        self.getCheckBoxRect(option).contains(event.pos())):
                     return False
                 if event.type() == QtCore.QEvent.MouseButtonDblClick:
                     return True
             elif event.type() == QtCore.QEvent.KeyPress:
                 if (event.key() != QtCore.Qt.Key_Space and
-                    event.key() != QtCore.Qt.Key_Select):
+                        event.key() != QtCore.Qt.Key_Select):
                     return False
             else:
                 return False
@@ -266,7 +266,7 @@ class mileageDelegate(QtGui.QStyledItemDelegate):
             return True
         else:
             return QtGui.QStyledItemDelegate.editorEvent(self, event, model,
-                                                   option, index)
+                                                         option, index)
 
     def setModelData(self, editor, model, index):
         field = index.model().dataset.fieldobjs[index.column()]
@@ -286,11 +286,11 @@ class mileageDelegate(QtGui.QStyledItemDelegate):
         check_box_style_option = QtGui.QStyleOptionButton()
         check_box_rect = QtGui.QApplication.style().subElementRect(QtGui.QStyle.SE_CheckBoxIndicator, check_box_style_option, None)
         check_box_point = QtCore.QPoint(option.rect.x() +
-                            option.rect.width() / 2 -
-                            check_box_rect.width() / 2,
-                            option.rect.y() +
-                            option.rect.height() / 2 -
-                            check_box_rect.height() / 2)
+                                        option.rect.width() / 2 -
+                                        check_box_rect.width() / 2,
+                                        option.rect.y() +
+                                        option.rect.height() / 2 -
+                                        check_box_rect.height() / 2)
         return QtCore.QRect(check_box_point, check_box_rect.size())
 
 

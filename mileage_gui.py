@@ -12,7 +12,7 @@ from UIFiles.mileage_Ui import Ui_MainWindow as uiform
 # These are used in the settings
 organization = "McNinch Custom"
 application = "FuelMileage"
-version = '0.2(database_file_keep_model)'
+version = '0.2'
 
 
 def resource_path(relative):

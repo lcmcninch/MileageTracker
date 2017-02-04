@@ -68,7 +68,6 @@ class mileageGui(uiform, QtGui.QMainWindow):
             self.options['currentfile'] = None
 
         # Set up application data
-        # self._metapath = QtCore.QDir.homePath()
         self._metapath = os.getcwd()
         self._dirty = False
         self._checkSave = True
@@ -98,7 +97,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         self.tableModel.dirty.connect(self.setDirty)
         self.dirty.connect(self.setDirty)
 
-        #Set up a file reader dictionary
+        # Set up a file reader dictionary
         self._file_readers = {'.csv': self.readcsv,
                               '.mtf': self.readmtf}
 
@@ -180,8 +179,9 @@ class mileageGui(uiform, QtGui.QMainWindow):
             fname = os.path.abspath(filename)
         else:
             fname = QtGui.QFileDialog.getOpenFileName(self,
-                          'Open file', directory=self._metapath,
-                          filter=ffilter)
+                                                      'Open file',
+                                                      directory=self._metapath,
+                                                      filter=ffilter)
 
         if fname:
             fname = str(QtCore.QDir.toNativeSeparators(fname))
@@ -189,7 +189,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
             self._metapath = os.path.dirname(fname)
             ext = os.path.splitext(fname)[1]
 
-            #Read the file
+            # Read the file
             dataset = self._file_readers[ext](fname)
             self.tableModel.changeDataset(dataset)
 
@@ -232,9 +232,13 @@ class mileageGui(uiform, QtGui.QMainWindow):
             if price:
                 price = float(price.replace('$', ''))
             fillup = d[lhead.index('fillup')]
+            if 'compareprice' in lhead:
+                compareprice = d[lhead.index('compareprice')]
+            else:
+                compareprice = None
             e = mileageEntry(d[lhead.index('date')],
-                             d[lhead.index('town')],
-                             odometer, gallons, price, fillup, previous)
+                             d[lhead.index('town')], odometer,
+                             gallons, price, fillup, previous, compareprice)
             m.append(e)
         return m
 
@@ -252,8 +256,9 @@ class mileageGui(uiform, QtGui.QMainWindow):
                 odometer = float(odometer)
             price = newdb.price(k)
             fillup = newdb.fillup(k)
-            e = mileageEntry(newdb.date(k), newdb.town(k),
-                             odometer, gallons, price, fillup, previous)
+            compareprice = newdb.compareprice(k)
+            e = mileageEntry(newdb.date(k), newdb.town(k), odometer,
+                             gallons, price, fillup, previous, compareprice)
             m.append(e)
         return m
 
@@ -268,7 +273,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
         if checksave or not fname:
             pth = self._metapath
             fname = str(QtGui.QFileDialog.getSaveFileName(self,
-                          'Save file', directory=pth, filter=ffilter))
+                        'Save file', directory=pth, filter=ffilter))
 
         if fname:
             fname = str(QtCore.QDir.toNativeSeparators(fname))
@@ -403,7 +408,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
 
         def redo(self):
             if (self.parent.checkFresh.isChecked() or
-                len(self.parent.tableModel.dataset) == 0):
+                    len(self.parent.tableModel.dataset) == 0):
                 previous = None
             else:
                 previous = self.parent.tableModel.dataset[-1]

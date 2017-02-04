@@ -96,7 +96,6 @@ class MileageDatabase(object):
 
     def insert(self, sql, params=tuple()):
         """ insert a new record to database and return the new primary key """
-        print sql
         cursor = self.cursor()
         cursor.execute(sql, params)
         newID = cursor.lastrowid
@@ -144,6 +143,7 @@ class MileageDatabase(object):
                 Odometer REAL,
                 Gallons REAL,
                 Price REAL,
+                ComparePrice REAL,
                 Fillup BOOL,
                 Linkback BOOL);
             COMMIT;
@@ -219,6 +219,9 @@ class MileageDatabase(object):
 
     def linkback(self, idx):
         return self.get_value('linkback', idx)
+        
+    def compareprice(self, idx):
+        return self.get_value('ComparePrice', idx)
 
     # Advance Queries #
 
@@ -360,9 +363,14 @@ class MileageDatabase(object):
         self.execute('DELETE FROM entries WHERE eid=?', (idx,))
 
 if __name__ == '__main__':
-#     db = MileageDatabase('newdatabase2.db')
-#     db.readcsv('JettaFuelRecord.csv')
-    db = MileageDatabase('biggap.db')
+    import os.path
+    import time
+    rootdir = r'C:\Users\Luke\Files\Sync\Python\mileage\DatabaseTesting'
+    db = MileageDatabase(os.path.join(rootdir, 'JettaUsingReadcsv.db'))
+    t = time.time()
+    db.readcsv(os.path.join(rootdir, 'JettaFuelRecord.csv'))
+    print time.time() - t
+#     db = MileageDatabase('biggap.db')
 #     db.readcsv('TestFileWithBigGaps.csv')
 
     #Basic odometer queries prior to implementing miles method
@@ -417,4 +425,4 @@ if __name__ == '__main__':
     # idx = len(db)
     # db.removeEntry(idx)
 
-    db[4, 'Town'] = 'Belmaria'
+#     db[4, 'Town'] = 'Belmaria'

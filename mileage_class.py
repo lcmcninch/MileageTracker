@@ -1,6 +1,5 @@
 from os import linesep
 from fieldobjects import FieldObject, FieldObjectContainer
-from mileage_database import MileageDatabase
 
 
 class mileageList(list):
@@ -43,9 +42,12 @@ class mileageList(list):
                 fid.write(delimiter.join(out))
                 fid.write(linesep)
         elif ftype == 'mtf':
-            for x in self:
-                fid.addEntry(x.date, x.town, x.odometer, x.gallons, x.price,
-                               x.fillup, x.previous != None)
+            sql_params = [(x.date, x.town, x.odometer, x.gallons, x.price,
+                           x.compareprice, x.fillup, x.previous is not None)
+                          for x in self]
+            sql = """INSERT INTO Entries (Date, Town, Odometer, Gallons,
+                     Price, ComparePrice, Fillup, Linkback) VALUES (?,?,?,?,?,?,?,?)"""
+            fid.executemany(sql, sql_params)
 
     def getFieldByName(self, value):
         for fieldobj in self.fieldobjs:
@@ -68,12 +70,14 @@ class mileageList(list):
 class mileageEntry(object):
 
     displayFields = ['Date', 'Town', 'Odometer', 'Miles', 'Gallons', 'Price',
-                     'Cost', 'MPG', 'fillup'] + ['PreviousDex']
+                     'Cost', 'MPG', 'fillup', 'ComparePrice', 'Savings', 'PreviousDex']
     saveFields = displayFields
-    editableFields = ['Date', 'Town', 'Odometer', 'Gallons', 'Price', 'fillup']
+    editableFields = ['Date', 'Town', 'Odometer', 'Gallons', 'Price', 'fillup',
+                      'ComparePrice']
+    compareMPG = 31.5
 
     def __init__(self, date, location, odometer, gallons, price, fillup,
-                 previous=None):
+                 previous=None, compareprice=None):
         self._date = date
         self._location = location
         self._odometer = float(odometer) if odometer else None
@@ -83,6 +87,7 @@ class mileageEntry(object):
                                  fillup.lower() in ['false', 'f', '0']) else
                        bool(fillup))
         self.previous = previous
+        self._compareprice = float(compareprice) if compareprice else None
 
     def __getitem__(self, key):
         return self.__getattribute__(str(key).lower())
@@ -185,6 +190,24 @@ class mileageEntry(object):
         if self._price and self._gallons:
             return round(self._price * self._gallons, 2)
 
+    @property
+    def compareprice(self):
+        return self._compareprice
+
+    @compareprice.setter
+    def compareprice(self, value):
+        try:
+            value = value.replace('$', '')
+        except:
+            pass
+        finally:
+            self._compareprice = float(value)
+
+    @property
+    def savings(self):
+        if self.compareprice:
+            return self.miles/self.compareMPG*self.compareprice - self.cost
+
 
 def addPrevious(obj, value, field):
     """
@@ -201,12 +224,17 @@ def addPrevious(obj, value, field):
     return value
 
 if __name__ == "__main__":
+    container = mileageList()
     m = mileageEntry('2011/12/21', 'Stevensville', 19321, 13.4, 3.23, False)
     m1 = mileageEntry('2011/12/22', 'Stevensville', 19621, 12.1, 3.43, False,
                       m)
     m2 = mileageEntry('2011/12/23', 'Stevensville', 19921, 11.4, 3.13, True,
-                      m1)
+                      m1, compareprice=1.25)
+    container.append(m)
+    container.append(m1)
+    container.append(m2)
 #    print m2.sum_gallons
     print m2.miles
+    print m2.compareprice
 #    print m1.mpg, m2.mpg
 #    print m2['mpg']

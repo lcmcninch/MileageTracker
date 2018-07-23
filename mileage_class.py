@@ -206,7 +206,10 @@ class mileageEntry(object):
     @property
     def savings(self):
         if self.compareprice:
-            return self.miles/self.compareMPG*self.compareprice - self.cost
+            try:
+                return self.miles/self.compareMPG*self.compareprice - self.cost
+            except:
+                pass
 
 
 def addPrevious(obj, value, field):

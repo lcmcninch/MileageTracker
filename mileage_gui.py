@@ -176,7 +176,7 @@ class mileageGui(uiform, QtGui.QMainWindow):
                 return
         # Get the new filename
         if filename:
-            fname = os.path.abspath(filename)
+            fname = os.path.abspath(str(filename))
         else:
             fname = QtGui.QFileDialog.getOpenFileName(self,
                                                       'Open file',
@@ -193,8 +193,10 @@ class mileageGui(uiform, QtGui.QMainWindow):
             dataset = self._file_readers[ext](fname)
             self.tableModel.changeDataset(dataset)
 
-            h = self.viewTable.verticalHeader().sectionSizeFromContents(0)
-            self.viewTable.verticalHeader().setDefaultSectionSize(h.height())
+            # h = self.viewTable.verticalHeader().sectionSizeFromContents(0)
+            # self.viewTable.verticalHeader().setDefaultSectionSize(h.height())
+            h = self.viewTable.sizeHintForRow(0)
+            self.viewTable.verticalHeader().setDefaultSectionSize(h)
 
             # Populate the combobox
             self.editLocation.setInsertPolicy(QtGui.QComboBox.InsertAlphabetically)
@@ -431,6 +433,7 @@ def warningBox(message):
     message_box.setText(message)
     message_box.setIcon(QtGui.QMessageBox.Warning)
     message_box.exec_()
+
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
